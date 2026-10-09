@@ -45,8 +45,26 @@ export async function runNew(args: NewArgs, deps: NewDeps): Promise<string> {
   const directory = path.resolve(deps.cwd, args.dir ?? defaultDirectory(answers));
   if (!args.dryRun) await writeProject(directory, files, { force: args.force });
 
-  const result = { preset: preset.manifest.id, mcVersion: args.mc, directory, dryRun: args.dryRun, files, warnings: [...sourceWarnings, ...target.warnings] };
+  const warnings = relevantWarnings([...sourceWarnings, ...target.warnings], preset.manifest.platforms);
+  const result = { preset: preset.manifest.id, mcVersion: args.mc, directory, dryRun: args.dryRun, files, warnings };
   return args.json ? JSON.stringify({ ...result, files: files.map((file) => file.path) }, null, 2) : formatResult(result);
+}
+
+const PLATFORM_LABELS: Readonly<Record<string, string>> = {
+  paper: "Paper",
+  folia: "Folia",
+  velocity: "Velocity",
+  fabric: "Fabric",
+  neoforge: "NeoForge",
+  forge: "Forge",
+};
+
+/** Keeps the warnings about the platforms a preset targets, plus general ones such as a stale cache or an old Minecraft version. */
+export function relevantWarnings(warnings: readonly string[], platforms: readonly string[]): string[] {
+  const otherLabels = Object.entries(PLATFORM_LABELS)
+    .filter(([platform]) => !platforms.includes(platform))
+    .map(([, label]) => label);
+  return warnings.filter((warning) => !otherLabels.some((label) => warning.startsWith(`${label} `)));
 }
 
 function assertSupportedMinecraft(manifest: PresetManifest, mcVersion: string): void {

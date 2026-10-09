@@ -4,6 +4,8 @@ import { hasControlCharacters } from "../util/text.js";
 import type { AnswerValue, Answers, InputSpec, PresetManifest } from "./types.js";
 
 const IDENTIFIER = /^[A-Za-z][A-Za-z0-9]{0,31}$/;
+/** A mod id: 2 to 64 lowercase letters, digits and underscores, starting with a letter. */
+const SLUG = /^[a-z][a-z0-9_]{1,63}$/;
 const PACKAGE = /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)*$/;
 const VERSION = /^\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$/;
 const MAX_TEXT = 200;
@@ -52,6 +54,8 @@ function coerceValue(spec: InputSpec, value: AnswerValue): Coerced {
       return toUrl(spec, value);
     case "identifier":
       return checked(spec, value, (candidate) => IDENTIFIER.test(candidate) && !JAVA_RESERVED.has(candidate), "letters and digits starting with a letter, and not a Java keyword");
+    case "slug":
+      return checked(spec, value, (candidate) => SLUG.test(candidate), "2 to 64 lowercase letters, digits and underscores, starting with a letter");
     case "package":
       return checked(spec, value, isPackage, "a lowercase Java package such as dev.example.plugin, with no Java keywords");
     case "version":

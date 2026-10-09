@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "fabric-mod",
+  "title": "Fabric mod (Gradle, Java, unobfuscated Minecraft 26.1 and newer)",
+  "kind": "archetype",
+  "family": "mod",
+  "platforms": ["fabric"],
+  "minecraft": { "min": "26.1" },
+  "inputs": [
+    { "key": "name", "type": "identifier", "label": "Main class name", "example": "MyMod" },
+    { "key": "modId", "type": "slug", "label": "Mod id", "example": "my_mod" },
+    { "key": "title", "type": "text", "label": "Display name", "example": "My Mod" },
+    { "key": "package", "type": "package", "label": "Java package", "example": "dev.example.mymod" },
+    { "key": "version", "type": "version", "label": "Mod version", "default": "0.1.0" },
+    { "key": "description", "type": "text", "label": "Description", "default": "A Fabric mod." },
+    { "key": "author", "type": "text", "label": "Author", "example": "YourName" }
+  ],
+  "files": [
+    { "from": "files/settings.gradle", "to": "settings.gradle" },
+    { "from": "files/gradle.properties", "to": "gradle.properties" },
+    { "from": "files/build.gradle", "to": "build.gradle" },
+    { "from": "files/fabric.mod.json", "to": "src/main/resources/fabric.mod.json" },
+    { "from": "files/Mod.java", "to": "src/main/java/{{derived.packagePath}}/{{input.name}}.java" },
+    { "from": "files/ModClient.java", "to": "src/client/java/{{derived.packagePath}}/client/{{input.name}}Client.java" },
+    { "from": "files/gitignore", "to": ".gitignore" },
+    { "from": "files/AGENTS.md", "to": "AGENTS.md" },
+    { "from": "files/README.md", "to": "README.md" }
+  ],
+  "provenance": [
+    {
+      "use": "derived",
+      "repo": "FabricMC/fabric-example-mod",
+      "commit": "44465cb0eb83932c72ece5934d32ddfc758802ed",
+      "license": "CC0-1.0",
+      "paths": [
+        "build.gradle",
+        "gradle.properties",
+        "settings.gradle",
+        "src/main/resources/fabric.mod.json",
+        "src/main/java/com/example/ExampleMod.java",
+        "src/client/java/com/example/client/ExampleModClient.java",
+        ".gitignore"
+      ]
+    }
+  ]
+}

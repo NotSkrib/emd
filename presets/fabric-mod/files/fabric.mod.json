@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "{{input.modId}}",
+  "version": "@version@",
+  "name": "{{input.title|json}}",
+  "description": "{{input.description|json}}",
+  "authors": [
+    "{{input.author|json}}"
+  ],
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "{{input.package}}.{{input.name}}"
+    ],
+    "client": [
+      "{{input.package}}.client.{{input.name}}Client"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">={{resolved.fabricLoader}}",
+    "minecraft": "~{{resolved.minecraft}}",
+    "java": ">={{resolved.java}}",
+    "fabric-api": "*"
+  }
+}

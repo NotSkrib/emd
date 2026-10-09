@@ -65,6 +65,29 @@ describe("validateAnswers", () => {
   });
 });
 
+describe("validateAnswers slug inputs", () => {
+  const slugManifest = parsePresetManifest({
+    schema: 1,
+    id: "slug-fixture",
+    title: "Slug fixture",
+    kind: "feature",
+    family: "mod",
+    platforms: ["fabric"],
+    inputs: [{ key: "modId", type: "slug", label: "Mod id" }],
+  });
+
+  it.each(["my_mod", "ab", "mod2", "a".repeat(64)])("accepts the mod id %j", (modId) => {
+    expect(validateAnswers(slugManifest, { modId })).toEqual({ modId });
+  });
+
+  it.each(["", "a", "My_Mod", "my-mod", "1mod", "_mod", "my mod", "my.mod", "a".repeat(65), "mod\n"])(
+    "rejects the mod id %j",
+    (modId) => {
+      expect(errorCodeOf(() => validateAnswers(slugManifest, { modId }))).toBe("BAD_ANSWER");
+    },
+  );
+});
+
 describe("validateAnswers by input type", () => {
   const rejected = (input: Record<string, string | boolean>): string | undefined =>
     errorCodeOf(() => validateAnswers(MANIFEST, { ...VALID, ...input }));

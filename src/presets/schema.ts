@@ -26,7 +26,7 @@ const MAX_TEXT = 200;
 
 const KINDS: readonly PresetKind[] = ["archetype", "feature"];
 const FAMILIES: readonly PresetFamily[] = ["plugin", "proxy", "mod", "pack"];
-const INPUT_TYPES: readonly InputType[] = ["identifier", "package", "version", "text", "url", "boolean", "choice"];
+const INPUT_TYPES: readonly InputType[] = ["identifier", "slug", "package", "version", "text", "url", "boolean", "choice"];
 const PROVENANCE_USES: readonly ProvenanceUse[] = ["derived", "reference", "original"];
 
 /** Validates a parsed preset.json. Everything a preset declares is checked here, before any file is rendered. */

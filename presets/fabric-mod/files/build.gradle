@@ -1,0 +1,43 @@
+plugins {
+    id '{{resolved.loomPluginId}}' version "${loom_version}"
+}
+
+loom {
+    splitEnvironmentSourceSets()
+
+    mods {
+        "{{input.modId}}" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
+}
+
+dependencies {
+    // To change the versions see the gradle.properties file
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Fabric API. This is technically optional, but you probably want it anyway.
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        filter { line -> line.replace("@version@", project.version.toString()) }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = {{resolved.java}}
+}
+
+java {
+    // Loom attaches the sources jar to the build when this is present.
+    withSourcesJar()
+
+    sourceCompatibility = JavaVersion.VERSION_{{resolved.java}}
+    targetCompatibility = JavaVersion.VERSION_{{resolved.java}}
+}

@@ -1,4 +1,4 @@
-export type InputType = "identifier" | "package" | "version" | "text" | "url" | "boolean" | "choice";
+export type InputType = "identifier" | "slug" | "package" | "version" | "text" | "url" | "boolean" | "choice";
 export type PresetKind = "archetype" | "feature";
 export type PresetFamily = "plugin" | "proxy" | "mod" | "pack";
 export type ProvenanceUse = "derived" | "reference" | "original";

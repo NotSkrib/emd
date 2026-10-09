@@ -2,7 +2,7 @@ import { access, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:f
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runNew, type NewArgs, type NewDeps } from "../../src/commands/new.js";
+import { relevantWarnings, runNew, type NewArgs, type NewDeps } from "../../src/commands/new.js";
 import { parseMojangManifest } from "../../src/versions/mojang.js";
 import { errorCodeOfAsync, fixtureHttp, fixtureJson } from "../helpers/fixtures.js";
 
@@ -63,6 +63,34 @@ const exists = (file: string): Promise<boolean> =>
     () => true,
     () => false,
   );
+
+describe("relevantWarnings", () => {
+  const warnings = [
+    "Paper only has beta builds for 26.3.",
+    "Folia has no build for 26.3 (newest: 26.2).",
+    "NeoForge only has beta builds for 26.3.",
+    "Forge has no build for 26.3.",
+    "Fabric API has no build for 26.3.",
+    "Minecraft 1.16.5 is older than 1.20.5. Data below that is incomplete.",
+    "Using out-of-date cached data for https://example.test/x (2 days old).",
+  ];
+
+  it("keeps the platforms a preset targets, plus general warnings", () => {
+    expect(relevantWarnings(warnings, ["paper", "folia"])).toEqual([warnings[0], warnings[1], warnings[5], warnings[6]]);
+    expect(relevantWarnings(warnings, ["fabric"])).toEqual([warnings[4], warnings[5], warnings[6]]);
+  });
+
+  it("does not mistake NeoForge for Forge", () => {
+    const forOnlyForge = relevantWarnings(warnings, ["forge"]);
+
+    expect(forOnlyForge).toContain(warnings[3]);
+    expect(forOnlyForge).not.toContain(warnings[2]);
+  });
+
+  it("keeps every warning when the preset lists no platform it can tell apart", () => {
+    expect(relevantWarnings(warnings, ["paper", "folia", "velocity", "fabric", "neoforge", "forge"])).toEqual(warnings);
+  });
+});
 
 describe("runNew", () => {
   it("creates the files with the versions the resolver found", async () => {

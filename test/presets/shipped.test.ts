@@ -48,6 +48,12 @@ for (const preset of presets) {
       expect(missing).toEqual([]);
     });
 
+    it("renders valid JSON for every .json file", () => {
+      for (const file of render(preset).filter((candidate) => candidate.path.endsWith(".json"))) {
+        expect(() => JSON.parse(file.content), file.path).not.toThrow();
+      }
+    });
+
     it("renders for the latest release with no unreplaced tokens", () => {
       const files = render(preset);
 
@@ -59,6 +65,44 @@ for (const preset of presets) {
     });
   });
 }
+
+describe("fabric-mod output", () => {
+  const preset = presets.find((candidate) => candidate.manifest.id === "fabric-mod");
+  const files = preset ? render(preset) : [];
+  const content = (file: string): string => files.find((candidate) => candidate.path === file)?.content ?? "";
+
+  it("uses the resolver's Fabric, Loom, Java and Minecraft versions", () => {
+    expect(preset).toBeDefined();
+    expect(content("gradle.properties")).toContain(`minecraft_version=${latest}`);
+    expect(content("gradle.properties")).toContain(`loader_version=${target.fabric?.loader}`);
+    expect(content("gradle.properties")).toContain(`loom_version=${target.fabric?.loom}`);
+    expect(content("gradle.properties")).toContain(`fabric_api_version=${target.fabric?.api}`);
+    expect(content("build.gradle")).toContain(`id '${target.fabric?.loomPluginId}'`);
+    expect(content("build.gradle")).toContain(`it.options.release = ${target.java.major}`);
+  });
+
+  it("writes a descriptor that parses and points at the generated classes", () => {
+    const descriptor = JSON.parse(content("src/main/resources/fabric.mod.json") || "{}") as {
+      id: string;
+      version: string;
+      entrypoints: { main: string[]; client: string[] };
+      depends: Record<string, string>;
+    };
+
+    expect(descriptor.id).toBe("my_mod");
+    expect(descriptor.version).toBe("@version@");
+    expect(descriptor.entrypoints.main).toEqual(["dev.example.mymod.MyMod"]);
+    expect(descriptor.entrypoints.client).toEqual(["dev.example.mymod.client.MyModClient"]);
+    expect(descriptor.depends.minecraft).toBe(`~${latest}`);
+  });
+
+  it("puts the entrypoints where Gradle's split source sets expect them", () => {
+    const paths = files.map((file) => file.path);
+
+    expect(paths).toContain("src/main/java/dev/example/mymod/MyMod.java");
+    expect(paths).toContain("src/client/java/dev/example/mymod/client/MyModClient.java");
+  });
+});
 
 describe("paper-plugin-gradle output", () => {
   const preset = presets.find((candidate) => candidate.manifest.id === "paper-plugin-gradle");
