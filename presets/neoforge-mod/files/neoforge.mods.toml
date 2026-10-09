@@ -1,0 +1,24 @@
+# The mod descriptor. The version placeholders between @ signs are filled in from gradle.properties
+# by the generateModMetadata task in build.gradle. Everything else is written as is.
+license="{{input.license|json}}"
+
+[[mods]]
+modId="{{input.modId}}"
+version="@mod_version@"
+displayName="{{input.title|json}}"
+authors="{{input.author|json}}"
+description="{{input.description|json}}"
+
+[[dependencies.{{input.modId}}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[@neo_version@,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.{{input.modId}}]]
+    modId="minecraft"
+    type="required"
+    versionRange="@minecraft_version_range@"
+    ordering="NONE"
+    side="BOTH"

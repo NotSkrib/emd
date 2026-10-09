@@ -49,12 +49,12 @@ async function group(title, task) {
   }
 }
 
-/** Runs a command with its output shown. `.bat` files need a shell on Windows. */
+/** Runs a command with its output shown. `.bat` files need a shell on Windows, where the command line is one quoted string. */
 function runCommand(command, args, cwd) {
-  const shell = process.platform === "win32";
-  const quote = (text) => (shell && /\s/.test(text) ? `"${text}"` : text);
-  const result = spawnSync(quote(command), args.map(quote), { cwd, stdio: "inherit", shell });
-  return result.status === 0;
+  const options = { cwd, stdio: "inherit" };
+  if (process.platform !== "win32") return spawnSync(command, args, options).status === 0;
+  const quote = (text) => (/\s/.test(text) ? `"${text}"` : text);
+  return spawnSync([command, ...args].map(quote).join(" "), { ...options, shell: true }).status === 0;
 }
 
 async function applicationJars(projectDir) {

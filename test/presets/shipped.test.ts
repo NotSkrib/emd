@@ -23,8 +23,8 @@ if (!resolved.velocity) throw new Error("The recorded fixtures have no stable Ve
 const target = withVelocityJava(resolved, await fetchVelocityJava(http, resolved.velocity.stable));
 
 /** Renders a preset using each input's default, or its example when it has no default. */
-function render(preset: LoadedPreset): PlannedFile[] {
-  const answers = validateAnswers(preset.manifest, sampleAnswers(preset.manifest));
+function render(preset: LoadedPreset, overrides: Record<string, string> = {}): PlannedFile[] {
+  const answers = validateAnswers(preset.manifest, { ...sampleAnswers(preset.manifest), ...overrides });
   return planFiles(preset.manifest, preset.templates, buildContext(preset.manifest, answers, resolvedValues(target)));
 }
 
@@ -126,6 +126,54 @@ describe("generated Gradle builds", () => {
 
     expect(files.find((file) => file.path === "README.md")?.content).toContain(advice);
     expect(files.find((file) => file.path === "AGENTS.md")?.content).toContain(`Gradle ${target.tools.gradle} or newer`);
+  });
+});
+
+describe("neoforge-mod output", () => {
+  const preset = presets.find((candidate) => candidate.manifest.id === "neoforge-mod");
+  if (!preset) throw new Error("The neoforge-mod preset is not shipped.");
+  const files = render(preset);
+  const content = (file: string, from: readonly PlannedFile[] = files): string => from.find((candidate) => candidate.path === file)?.content ?? "";
+  const TOML = "src/main/templates/META-INF/neoforge.mods.toml";
+  /** A call to Gradle's `expand`, which treats a "$" in the text as a template and fails. A comment that names it is fine. */
+  const CALLS_EXPAND = /^\s*expand\b/m;
+
+  it("uses the resolver's NeoForge, ModDevGradle, Java and Minecraft versions", () => {
+    expect(content("gradle.properties")).toContain(`minecraft_version=${latest}`);
+    expect(content("gradle.properties")).toContain(`minecraft_version_range=[${latest}]`);
+    expect(content("gradle.properties")).toContain(`neo_version=${target.neoforge?.version}`);
+    expect(content("build.gradle")).toContain(`id 'net.neoforged.moddev' version '${target.tools.moddevgradle}'`);
+    expect(content("build.gradle")).toContain(`JavaLanguageVersion.of(${target.java.major})`);
+  });
+
+  it("leaves the version tokens for Gradle and writes everything else itself", () => {
+    const toml = content(TOML);
+
+    expect(toml).toContain('version="@mod_version@"');
+    expect(toml).toContain('versionRange="[@neo_version@,)"');
+    expect(toml).toContain('versionRange="@minecraft_version_range@"');
+    expect(toml).toContain('modId="my_mod"');
+    expect(toml.match(/\[\[dependencies\.my_mod\]\]/g)).toHaveLength(2);
+    expect(content("build.gradle")).not.toMatch(CALLS_EXPAND);
+  });
+
+  it("escapes free text for TOML and keeps it away from Gradle's template engine", () => {
+    const tricky = 'Costs $5 and ${danger}, says "hi" \\ bye';
+    const escaped = 'Costs $5 and ${danger}, says \\"hi\\" \\\\ bye';
+    const toml = content(TOML, render(preset, { description: tricky, license: tricky }));
+
+    expect(toml).toContain(`description="${escaped}"`);
+    expect(toml).toContain(`license="${escaped}"`);
+    expect(content("build.gradle")).not.toMatch(CALLS_EXPAND);
+  });
+
+  it("registers the main class on the id the descriptor declares", () => {
+    const main = content("src/main/java/dev/example/mymod/MyMod.java");
+    const client = content("src/main/java/dev/example/mymod/MyModClient.java");
+
+    expect(main).toContain("@Mod(MyMod.MODID)");
+    expect(main).toContain('MODID = "my_mod"');
+    expect(client).toContain("@Mod(value = MyMod.MODID, dist = Dist.CLIENT)");
   });
 });
 

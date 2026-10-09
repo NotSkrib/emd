@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "neoforge-mod",
+  "title": "NeoForge mod (ModDevGradle, Java, Minecraft 26.1 and newer)",
+  "kind": "archetype",
+  "family": "mod",
+  "platforms": ["neoforge"],
+  "minecraft": { "min": "26.1" },
+  "inputs": [
+    { "key": "name", "type": "identifier", "label": "Main class name", "example": "MyMod" },
+    { "key": "modId", "type": "slug", "label": "Mod id", "example": "my_mod" },
+    { "key": "title", "type": "text", "label": "Display name", "example": "My Mod" },
+    { "key": "package", "type": "package", "label": "Java package", "example": "dev.example.mymod" },
+    { "key": "version", "type": "version", "label": "Mod version", "default": "0.1.0" },
+    { "key": "description", "type": "text", "label": "Description", "default": "A NeoForge mod." },
+    { "key": "author", "type": "text", "label": "Author", "example": "YourName" },
+    { "key": "license", "type": "text", "label": "License", "default": "All Rights Reserved" }
+  ],
+  "files": [
+    { "from": "files/settings.gradle", "to": "settings.gradle" },
+    { "from": "files/gradle.properties", "to": "gradle.properties" },
+    { "from": "files/build.gradle", "to": "build.gradle" },
+    { "from": "files/neoforge.mods.toml", "to": "src/main/templates/META-INF/neoforge.mods.toml" },
+    { "from": "files/Mod.java", "to": "src/main/java/{{derived.packagePath}}/{{input.name}}.java" },
+    { "from": "files/ModClient.java", "to": "src/main/java/{{derived.packagePath}}/{{input.name}}Client.java" },
+    { "from": "files/gitignore", "to": ".gitignore" },
+    { "from": "files/AGENTS.md", "to": "AGENTS.md" },
+    { "from": "files/README.md", "to": "README.md" }
+  ],
+  "provenance": [
+    {
+      "use": "derived",
+      "repo": "NeoForgeMDKs/MDK-26.3-ModDevGradle",
+      "commit": "4dacaffe4d5395c675a824beac2d1961b7d03bdb",
+      "license": "MIT",
+      "paths": [
+        "build.gradle",
+        "gradle.properties",
+        "settings.gradle",
+        ".gitignore",
+        "src/main/templates/META-INF/neoforge.mods.toml",
+        "src/main/java/com/example/examplemod/ExampleMod.java",
+        "src/main/java/com/example/examplemod/ExampleModClient.java"
+      ]
+    }
+  ]
+}
