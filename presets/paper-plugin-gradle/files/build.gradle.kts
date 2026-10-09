@@ -1,6 +1,6 @@
 plugins {
     java
-    id("xyz.jpenilla.run-paper") version "3.1.0"
+    id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
 group = "{{input.package}}"
@@ -26,8 +26,10 @@ tasks {
         options.release.set({{resolved.java}})
     }
     processResources {
+        val pluginVersion = project.version.toString()
+        inputs.property("pluginVersion", pluginVersion)
         filesMatching("plugin.yml") {
-            filter { line -> line.replace("@version@", project.version.toString()) }
+            filter { line -> line.replace("@version@", pluginVersion) }
         }
     }
     runServer {

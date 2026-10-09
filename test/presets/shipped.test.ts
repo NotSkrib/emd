@@ -104,6 +104,33 @@ describe("fabric-mod output", () => {
   });
 });
 
+/** Lessons from building the generated projects with real Gradle. */
+describe("generated Gradle builds", () => {
+  const gradleBuilds = presets.flatMap((preset) => {
+    const files = render(preset);
+    const build = files.find((file) => /^build\.gradle(\.kts)?$/.test(file.path));
+    return build ? [{ id: preset.manifest.id, build: build.content, files }] : [];
+  });
+
+  it("covers every shipped preset", () => {
+    expect(gradleBuilds.map((entry) => entry.id).sort()).toEqual(presets.map((preset) => preset.manifest.id).sort());
+  });
+
+  it.each(gradleBuilds)("$id never reads `project` inside a filter closure (breaks the configuration cache)", ({ build }) => {
+    const filterLines = build.split("\n").filter((line) => line.includes("filter {"));
+
+    expect(filterLines.length).toBeGreaterThan(0);
+    for (const line of filterLines) expect(line).not.toContain("project.");
+  });
+
+  it.each(gradleBuilds)("$id tells the user which Gradle to use", ({ files }) => {
+    const advice = `gradle wrapper --gradle-version ${target.tools.gradle}`;
+
+    expect(files.find((file) => file.path === "README.md")?.content).toContain(advice);
+    expect(files.find((file) => file.path === "AGENTS.md")?.content).toContain(`Gradle ${target.tools.gradle} or newer`);
+  });
+});
+
 describe("paper-plugin-gradle output", () => {
   const preset = presets.find((candidate) => candidate.manifest.id === "paper-plugin-gradle");
 

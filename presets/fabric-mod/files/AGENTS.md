@@ -10,7 +10,7 @@ gradle runClient    # start a development client with the mod loaded
 gradle runServer    # start a development server with the mod loaded
 ```
 
-Run `gradle wrapper` once if you want `./gradlew`.
+Needs Gradle {{resolved.gradle}} or newer. README.md explains how to get a matching `./gradlew`.
 
 ## Layout
 

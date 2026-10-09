@@ -6,7 +6,7 @@ One toolkit for building Minecraft plugins, mods and packs with an AI agent.
 - **Presets proven on real projects.** Planned. Each preset records which open-source project it came from and is rebuilt against the newest release in CI.
 - **Skills and subagents** for Claude Code, OpenCode, VS Code Copilot, Antigravity, Codex, Cursor and Gemini CLI. Planned.
 
-Status: early development. The live version resolver and a first preset (a Paper plugin) work. That preset renders correctly and is unit tested, but no CI job has built a generated project with Gradle yet. Skills and the installer are not built yet, and nothing is published to npm.
+Status: early development. The live version resolver and two presets (a Paper plugin and a Fabric mod) work. Both are unit tested, and both have been built once by hand with real Gradle against Minecraft 26.3; no CI job does that yet, and nothing has booted a server or client. Skills and the installer are not built yet, and nothing is published to npm.
 
 ## Try it
 

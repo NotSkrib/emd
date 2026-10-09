@@ -20,8 +20,14 @@ A Fabric mod for Minecraft 26.1 and newer: Gradle (Groovy), Java, a common entry
 
 - Upstream pins Loom as `1.18-SNAPSHOT`; the resolver picks the newest stable Loom. If a brand-new Minecraft release needs a snapshot, change `loom_version` in `gradle.properties` and tell the resolver.
 - Code in `src/main` must not reference classes from `src/client`.
-- The Gradle wrapper is not generated. Run `gradle wrapper` once if you want `./gradlew`.
+- **The newest Loom needs the newest Gradle.** Loom 1.18.x declares Gradle 9.7.0 as its minimum; on 9.5.1 the build stops with "No matching variant of net.fabricmc:fabric-loom". The generated README tells the user to use the Gradle version the resolver reported. Because the plugin is evaluated before any task runs, `gradle wrapper` fails the same way on an old Gradle, so the README says to run it in an empty folder.
+- Do not read `project` inside a `filter { }` closure. It runs at execution time and fails with `org.gradle.configuration-cache=true`, which `gradle.properties` turns on. Read the version into a local first, as `build.gradle` does. A shipped-preset test checks this.
+- The Gradle wrapper is not generated, because `gradle-wrapper.jar` is a binary and the preset format has none.
 
 ## Status
 
-Written and unit tested. Not yet proven: nothing has built a generated project with Gradle or started it with `runClient`.
+Built with real Gradle on 2026-10-09: Gradle 9.5.1, Java 25, Minecraft 26.3, Fabric Loader 0.19.5, Fabric API 0.162.0+26.3, Loom **1.17.21**. Both source sets compile, the jar holds both entrypoints, and `fabric.mod.json` has the version filled in. That build found the `filter` bug above.
+
+Not yet proven:
+- **The exact output with Loom 1.18.3.** It needs Gradle 9.7 or newer and only 9.5.1 was available, so the proof used the newest Loom that 9.5.1 accepts.
+- **`runClient` and `runServer`.** Nothing has started the game.

@@ -9,7 +9,7 @@ gradle build        # compile and package build/libs/{{input.name}}-{{input.vers
 gradle runServer    # start a local Paper server with the plugin loaded (files go in run/)
 ```
 
-Run `gradle wrapper` once if you want `./gradlew`.
+Needs Gradle {{resolved.gradle}} or newer. README.md explains how to get a matching `./gradlew`.
 
 ## Layout
 
