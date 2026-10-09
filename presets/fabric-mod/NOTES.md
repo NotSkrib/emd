@@ -26,8 +26,6 @@ A Fabric mod for Minecraft 26.1 and newer: Gradle (Groovy), Java, a common entry
 
 ## Status
 
-Built with real Gradle on 2026-10-09: Gradle 9.5.1, Java 25, Minecraft 26.3, Fabric Loader 0.19.5, Fabric API 0.162.0+26.3, Loom **1.17.21**. Both source sets compile, the jar holds both entrypoints, and `fabric.mod.json` has the version filled in. That build found the `filter` bug above.
+Built with real Gradle on 2026-10-09, exactly as `emd new` generates it: Gradle 9.8.1, Java 25, Minecraft 26.3, Fabric Loader 0.19.5, Fabric API 0.162.0+26.3, Loom 1.18.3. Both source sets compile, the jar holds both entrypoints, `fabric.mod.json` has the version filled in, and the build is clean with the configuration cache on. An earlier build on Gradle 9.5.1 (with Loom 1.17.21, the newest that Gradle accepts) found the `filter` bug above, and Gradle 9.5.1 with Loom 1.18.3 fails as described.
 
-Not yet proven:
-- **The exact output with Loom 1.18.3.** It needs Gradle 9.7 or newer and only 9.5.1 was available, so the proof used the newest Loom that 9.5.1 accepts.
-- **`runClient` and `runServer`.** Nothing has started the game.
+Not yet proven: `runClient` and `runServer`. Nothing has started the game.
