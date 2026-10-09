@@ -74,4 +74,4 @@ npm run build
 
 ## License
 
-MIT
+MIT. The presets are derived from other open-source projects, listed with their licenses in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

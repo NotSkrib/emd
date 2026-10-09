@@ -6,12 +6,21 @@
   "bin": {
     "emd": "dist/cli.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NotSkrib/emd.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NotSkrib/emd/issues"
+  },
+  "homepage": "https://github.com/NotSkrib/emd#readme",
   "files": [
     "dist",
     "data",
     "presets",
     "skills",
-    "agents"
+    "agents",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "engines": {
     "node": ">=22"
