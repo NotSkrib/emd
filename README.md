@@ -6,7 +6,7 @@ One toolkit for building Minecraft plugins, mods and packs with an AI agent.
 - **Presets proven on real projects.** Planned. Each preset records which open-source project it came from and is rebuilt against the newest release in CI.
 - **Skills and subagents** for Claude Code, OpenCode, VS Code Copilot, Antigravity, Codex, Cursor and Gemini CLI. Planned.
 
-Status: early development. The live version resolver works. Presets, skills and the installer are not built yet, and nothing is published to npm.
+Status: early development. The live version resolver and a first preset (a Paper plugin) work. That preset renders correctly and is unit tested, but no CI job has built a generated project with Gradle yet. Skills and the installer are not built yet, and nothing is published to npm.
 
 ## Try it
 
@@ -32,6 +32,19 @@ Minecraft 26.3  (Java 25, from Mojang)
 ```
 
 It warns when a platform trails the newest Minecraft release, as Folia does here. Responses are cached privately in `~/.emd/cache` for an hour, and `--refresh` skips the cache. If the network is down, a cached copy up to seven days old is used and the output says so.
+
+## Create a project
+
+A preset is a proven project layout. `emd new` fills it in with the live versions for the Minecraft release you pick:
+
+```bash
+node dist/cli.js preset list
+node dist/cli.js preset show paper-plugin-gradle
+node dist/cli.js new --preset paper-plugin-gradle --mc 26.3 \
+  --set name=MyPlugin --set package=dev.example.myplugin --set author=YourName
+```
+
+Add `--dry-run` to see the files first, or `--json` for output a script or an AI agent can read. It never overwrites existing files unless you pass `--force`. Free-text answers such as the description are escaped for each file they land in, and every generated project gets its own `AGENTS.md` with the exact build and run commands.
 
 Data for Minecraft versions older than 1.20.5 is incomplete, because platforms publish those under older artifact names. `emd versions` says so when you ask for one.
 

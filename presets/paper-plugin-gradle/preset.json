@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "paper-plugin-gradle",
+  "title": "Paper plugin (Gradle Kotlin DSL, Java)",
+  "kind": "archetype",
+  "family": "plugin",
+  "platforms": ["paper", "folia"],
+  "minecraft": { "min": "1.20.5" },
+  "inputs": [
+    { "key": "name", "type": "identifier", "label": "Plugin name", "example": "MyPlugin" },
+    { "key": "package", "type": "package", "label": "Java package", "example": "dev.example.myplugin" },
+    { "key": "version", "type": "version", "label": "Plugin version", "default": "0.1.0" },
+    { "key": "description", "type": "text", "label": "Description", "default": "A Paper plugin." },
+    { "key": "author", "type": "text", "label": "Author", "example": "YourName" },
+    { "key": "folia", "type": "boolean", "label": "Declare Folia support", "default": false }
+  ],
+  "files": [
+    { "from": "files/settings.gradle.kts", "to": "settings.gradle.kts" },
+    { "from": "files/build.gradle.kts", "to": "build.gradle.kts" },
+    { "from": "files/plugin.yml", "to": "src/main/resources/plugin.yml" },
+    { "from": "files/Plugin.java", "to": "src/main/java/{{derived.packagePath}}/{{input.name}}.java" },
+    { "from": "files/gitignore", "to": ".gitignore" },
+    { "from": "files/AGENTS.md", "to": "AGENTS.md" },
+    { "from": "files/README.md", "to": "README.md" }
+  ],
+  "provenance": [
+    {
+      "use": "derived",
+      "repo": "jpenilla/MiniMOTD",
+      "commit": "1445370dc7e9703466c00d8f62f93025fe317697",
+      "license": "MIT",
+      "paths": ["platform/paper/build.gradle.kts", "gradle/libs.versions.toml"]
+    }
+  ]
+}

@@ -8,6 +8,8 @@ export type EmdErrorCode =
   | "BAD_PRESET"
   | "BAD_ANSWER"
   | "BAD_TEMPLATE"
+  | "NOT_FOUND"
+  | "CONFLICT"
   | "USAGE";
 
 export class EmdError extends Error {

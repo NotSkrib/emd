@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { runCli } from "./cli/run.js";
 import { createHttpClient } from "./versions/http.js";
 
@@ -21,4 +22,6 @@ process.exitCode = await runCli(process.argv.slice(2), {
   stdout: (text) => process.stdout.write(text),
   stderr: (text) => process.stderr.write(text),
   createHttp: ({ refresh }) => createHttpClient({ refresh, userAgent: `emd-minecraft/${version} (+${REPOSITORY_URL})` }),
+  presetsDir: fileURLToPath(new URL("../presets", import.meta.url)),
+  cwd: process.cwd(),
 });

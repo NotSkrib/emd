@@ -1,0 +1,7 @@
+name: {{input.name}}
+version: "@version@"
+main: {{input.package}}.{{input.name}}
+api-version: "{{resolved.minecraft}}"
+description: "{{input.description|yaml}}"
+authors: ["{{input.author|yaml}}"]
+folia-supported: {{input.folia}}
