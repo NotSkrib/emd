@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -30,6 +31,17 @@ function render(preset: LoadedPreset, overrides: Record<string, string> = {}): P
 
 it("ships at least one preset", () => {
   expect(presets.length).toBeGreaterThan(0);
+});
+
+it("credits every project a preset is derived from in THIRD_PARTY_NOTICES.md", async () => {
+  const notices = await readFile(path.join(PRESETS_DIR, "..", "THIRD_PARTY_NOTICES.md"), "utf8");
+  const sources = presets.flatMap((preset) => preset.manifest.provenance.flatMap((entry) => (entry.use === "derived" && entry.repo ? [entry] : [])));
+
+  expect(sources.length).toBeGreaterThan(0);
+  for (const { repo, commit } of sources) {
+    expect(notices, `${repo} is missing from THIRD_PARTY_NOTICES.md`).toContain(`github.com/${repo}`);
+    expect(notices, `the notice for ${repo} names a different commit`).toContain(commit ?? "no commit recorded");
+  }
 });
 
 for (const preset of presets) {
