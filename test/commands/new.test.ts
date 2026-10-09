@@ -176,6 +176,39 @@ describe("runNew", () => {
     expect(await readFile(path.join(work, "Demo", "src", "Demo.txt"), "utf8")).toMatch(/^paper=26\.\d+\.build\.\+ java=\d+ desc="none"\n$/);
   });
 
+  it("resolves --mc latest to the newest release and reports that version", async () => {
+    const output = await runNew(args({ mc: "latest" }), deps());
+
+    expect(output).toContain(`Created demo-preset for Minecraft ${LATEST}`);
+    expect(output).not.toContain("latest");
+  });
+
+  it("reports the real version, not the word latest, in the JSON summary", async () => {
+    const parsed = JSON.parse(await runNew(args({ mc: "latest", json: true, dryRun: true }), deps())) as { mcVersion: string };
+
+    expect(parsed.mcVersion).toBe(LATEST);
+  });
+
+  it("still checks the preset's limits against the version that latest stands for", async () => {
+    await writeFile(
+      path.join(presetsDir, "demo-preset", "preset.json"),
+      JSON.stringify({
+        schema: 1,
+        id: "demo-preset",
+        title: "Demo",
+        kind: "archetype",
+        family: "plugin",
+        platforms: ["paper"],
+        minecraft: { max: "1.20.5" },
+        inputs: [{ key: "name", type: "identifier", label: "Name" }],
+        files: [{ from: "files/x.txt", to: "x.txt" }],
+        provenance: [{ use: "original", license: "MIT" }],
+      }),
+    );
+
+    await expect(runNew(args({ mc: "latest" }), deps())).rejects.toThrow(/supports Minecraft up to 1\.20\.5/);
+  });
+
   it("shows what it would do without writing anything on a dry run", async () => {
     const output = await runNew(args({ dryRun: true }), deps());
 

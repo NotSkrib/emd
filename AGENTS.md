@@ -11,6 +11,7 @@ npm test              # unit tests against recorded fixtures, no network
 npm run test:live     # hits the real version APIs
 npm run record-fixtures
 npm run build
+npm run prove         # after build: generate every preset and build it with Gradle (needs JDK 25 and a current Gradle)
 ```
 
 ## Layout

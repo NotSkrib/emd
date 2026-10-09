@@ -17,9 +17,12 @@ import {
   type TargetInfo,
 } from "../versions/resolver.js";
 
+/** What `--mc` can say instead of a version: the newest release. */
+export const LATEST_MINECRAFT = "latest";
+
 export interface NewArgs {
   preset: string;
-  /** The Minecraft release to target. Only a proxy preset may leave it out. */
+  /** The Minecraft release to target, or "latest". Only a proxy preset may leave it out. */
   mc?: string;
   /** Answers given as `--set key=value`. */
   set: Readonly<Record<string, AnswerValue>>;
@@ -43,11 +46,13 @@ export async function runNew(args: NewArgs, deps: NewDeps): Promise<string> {
   if (args.mc === undefined && manifest.family !== "proxy") {
     throw new EmdError("USAGE", `--mc is required for ${manifest.id}, for example --mc 26.3.`);
   }
-  if (args.mc !== undefined) assertSupportedMinecraft(manifest, args.mc);
+  if (args.mc !== undefined && args.mc !== LATEST_MINECRAFT) assertSupportedMinecraft(manifest, args.mc);
 
   const { data, warnings: sourceWarnings } = await fetchSourceData(deps.http);
-  // A proxy is not tied to one Minecraft version, so without --mc the newest release stands in for it.
-  const mcVersion = args.mc ?? data.manifest.latestRelease;
+  // "latest" is only known once the manifest is read. A proxy is not tied to one Minecraft version,
+  // so without --mc the newest release stands in for it.
+  const mcVersion = args.mc === undefined || args.mc === LATEST_MINECRAFT ? data.manifest.latestRelease : args.mc;
+  if (args.mc === LATEST_MINECRAFT) assertSupportedMinecraft(manifest, mcVersion);
   const java = await fetchJavaRequirement(deps.http, data.manifest, mcVersion);
   const resolved = resolveTarget(data, mcVersion, java);
   const target = await withVelocityNeeds(resolved, manifest, deps.http);
@@ -62,7 +67,7 @@ export async function runNew(args: NewArgs, deps: NewDeps): Promise<string> {
   const warnings = relevantWarnings([...sourceWarnings, ...target.warnings], manifest.platforms);
   const result = {
     preset: manifest.id,
-    ...(args.mc === undefined ? {} : { mcVersion: args.mc }),
+    ...(args.mc === undefined ? {} : { mcVersion }),
     directory,
     dryRun: args.dryRun,
     files,

@@ -226,6 +226,24 @@ describe("runCli new", () => {
     expect(parsed.files).toContain("src/main/java/dev/example/demo/Demo.java");
   });
 
+  it("accepts --mc latest", async () => {
+    const argv = NEW_ARGS.map((arg) => (arg === LATEST ? "latest" : arg));
+    const result = await run([...argv, "--dry-run", "--json"]);
+
+    expect(result.code).toBe(0);
+    expect((JSON.parse(result.out) as { mcVersion: string }).mcVersion).toBe(LATEST);
+  });
+
+  it("still rejects a --mc that is neither a release nor latest", async () => {
+    for (const bad of ["Latest", "newest", "26.3-snapshot", "latest "]) {
+      const argv = NEW_ARGS.map((arg) => (arg === LATEST ? bad : arg));
+      const result = await run([...argv, "--dry-run"]);
+
+      expect(result.code, bad).toBe(2);
+      expect(result.err, bad).toContain("--mc expects");
+    }
+  });
+
   it("keeps an equals sign inside a --set value", async () => {
     const result = await run([...NEW_ARGS, "--set", "description=a=b", "--dry-run"]);
 

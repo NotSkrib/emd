@@ -1,0 +1,52 @@
+name: presets
+
+# Generates every preset for the newest Minecraft release and builds it with Gradle. The unit tests
+# only prove that templates render; this proves that what they render still compiles against what
+# Mojang, Paper, Fabric and Velocity publish today. It also runs nightly, because those move without
+# any commit here.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "presets/**"
+      - "src/**"
+      - "scripts/prove-presets.mjs"
+      - ".github/workflows/presets.yml"
+  pull_request:
+    paths:
+      - "presets/**"
+      - "src/**"
+      - "scripts/prove-presets.mjs"
+      - ".github/workflows/presets.yml"
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-presets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # Current Minecraft releases need Java 25. When Mojang moves to a newer Java this job fails on
+      # the compile step, which is the signal to raise this number.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: current
+      - run: npm ci
+      - run: npm run build
+      - run: node scripts/prove-presets.mjs

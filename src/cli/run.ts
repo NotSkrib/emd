@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { runNew } from "../commands/new.js";
+import { LATEST_MINECRAFT, runNew } from "../commands/new.js";
 import { runPreset } from "../commands/preset.js";
 import { runVersions } from "../commands/versions.js";
 import { EmdError } from "../errors.js";
@@ -32,7 +32,7 @@ const NEW_HELP = `Usage: emd new --preset <id> [--mc <version>] [options]
 Creates a project from a preset, using live versions for the chosen Minecraft release.
 
   --preset <id>        Which preset to use (see \`emd preset list\`)
-  --mc <version>       Minecraft release to target, for example 26.3. Required, except for proxy presets such as velocity-plugin
+  --mc <version>       Minecraft release to target, for example 26.3, or latest. Required, except for proxy presets such as velocity-plugin
   --set key=value      Answer one of the preset's inputs (see \`emd preset show <id>\`). Repeatable.
   --dir <path>         Where to create the project. Default: a folder named after the name input
   --dry-run            Show what would be created without writing anything
@@ -161,7 +161,7 @@ async function newCommand(args: readonly string[], env: CliEnvironment, output: 
 
   const request = {
     preset: values.preset,
-    ...(values.mc === undefined ? {} : { mc: requireMinecraft(values.mc) }),
+    ...(values.mc === undefined ? {} : { mc: requireMinecraft(values.mc, { allowLatest: true }) }),
     set: parseSetOptions(values.set ?? []),
     ...(values.dir === undefined ? {} : { dir: values.dir }),
     force: values.force === true,
@@ -173,9 +173,11 @@ async function newCommand(args: readonly string[], env: CliEnvironment, output: 
   return EXIT_OK;
 }
 
-function requireMinecraft(value: string): string {
+function requireMinecraft(value: string, options: { allowLatest?: boolean } = {}): string {
+  if (options.allowLatest === true && value === LATEST_MINECRAFT) return value;
   if (!isStableMcVersion(value)) {
-    throw new EmdError("USAGE", `--mc expects a release such as 26.3 or 1.21.11, not ${JSON.stringify(value)}.`);
+    const expected = options.allowLatest === true ? "a release such as 26.3 or 1.21.11, or latest" : "a release such as 26.3 or 1.21.11";
+    throw new EmdError("USAGE", `--mc expects ${expected}, not ${JSON.stringify(value)}.`);
   }
   return value;
 }

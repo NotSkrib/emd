@@ -44,6 +44,8 @@ node dist/cli.js new --preset paper-plugin-gradle --mc 26.3 \
   --set name=MyPlugin --set package=dev.example.myplugin --set author=YourName
 ```
 
+`--mc latest` means the newest Minecraft release.
+
 A proxy plugin is not tied to one Minecraft release, so `--mc` is optional for it, and its Java version comes from the Velocity API itself:
 
 ```bash
@@ -70,7 +72,10 @@ Data for Minecraft versions older than 1.20.5 is incomplete, because platforms p
 npm ci
 npm test
 npm run build
+npm run prove    # generate every preset and build it with Gradle (JDK 25 and a current Gradle)
 ```
+
+The `presets` workflow does the same on GitHub for every change to a preset and once a night, because Minecraft tooling moves without any commit here.
 
 ## License
 

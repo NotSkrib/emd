@@ -33,6 +33,7 @@
     "test:coverage": "vitest run --coverage",
     "test:live": "vitest run --config vitest.live.config.ts",
     "record-fixtures": "node scripts/record-fixtures.mjs",
+    "prove": "node scripts/prove-presets.mjs",
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "keywords": [

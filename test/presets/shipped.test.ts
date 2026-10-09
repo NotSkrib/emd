@@ -6,6 +6,7 @@ import { buildContext, resolvedValues } from "../../src/presets/context.js";
 import { lintManifest } from "../../src/presets/lint.js";
 import { loadPresets, type LoadedPreset } from "../../src/presets/load.js";
 import { planFiles } from "../../src/presets/plan.js";
+import { sampleAnswers } from "../../src/presets/samples.js";
 import type { PlannedFile } from "../../src/presets/types.js";
 import { fetchJavaRequirement, fetchSourceData, fetchVelocityJava, resolveTarget, withVelocityJava } from "../../src/versions/resolver.js";
 import { fixtureHttp } from "../helpers/fixtures.js";
@@ -23,13 +24,7 @@ const target = withVelocityJava(resolved, await fetchVelocityJava(http, resolved
 
 /** Renders a preset using each input's default, or its example when it has no default. */
 function render(preset: LoadedPreset): PlannedFile[] {
-  const samples = Object.fromEntries(
-    preset.manifest.inputs.flatMap((spec) => {
-      const value = spec.default ?? spec.example;
-      return value === undefined ? [] : [[spec.key, value] as const];
-    }),
-  );
-  const answers = validateAnswers(preset.manifest, samples);
+  const answers = validateAnswers(preset.manifest, sampleAnswers(preset.manifest));
   return planFiles(preset.manifest, preset.templates, buildContext(preset.manifest, answers, resolvedValues(target)));
 }
 
