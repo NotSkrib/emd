@@ -1,0 +1,9 @@
+{
+  "id": "1.12.2",
+  "type": "release",
+  "releaseTime": "2017-09-18T08:39:46+00:00",
+  "javaVersion": {
+    "component": "jre-legacy",
+    "majorVersion": 8
+  }
+}

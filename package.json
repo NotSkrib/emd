@@ -1,0 +1,49 @@
+{
+  "name": "emd-minecraft",
+  "version": "0.1.0",
+  "description": "Everything Minecraft Development: live version data, proven presets and AI skills for building Minecraft plugins, mods and packs.",
+  "type": "module",
+  "bin": {
+    "emd": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "data",
+    "presets",
+    "skills",
+    "agents"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:live": "vitest run --config vitest.live.config.ts",
+    "record-fixtures": "node scripts/record-fixtures.mjs",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "keywords": [
+    "minecraft",
+    "paper",
+    "fabric",
+    "neoforge",
+    "forge",
+    "velocity",
+    "datapack",
+    "resourcepack",
+    "ai-agents",
+    "agent-skills"
+  ],
+  "author": "notskrib",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@vitest/coverage-v8": "^5.0.3",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}
