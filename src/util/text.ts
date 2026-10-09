@@ -18,8 +18,16 @@ export function stripControlCharacters(text: string): string {
     .join("");
 }
 
+/** True when the text holds any control character, tab and newline included. Used to vet single-line input. */
+export function hasControlCharacters(text: string): boolean {
+  return Array.from(text).some((character) => isControl(character.codePointAt(0) ?? 0));
+}
+
 function isUnsafe(code: number): boolean {
-  if (code === TAB || code === NEWLINE) return false;
+  return code !== TAB && code !== NEWLINE && isControl(code);
+}
+
+function isControl(code: number): boolean {
   return (
     code <= LAST_C0_CONTROL ||
     (code >= DELETE && code <= LAST_C1_CONTROL) ||

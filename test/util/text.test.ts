@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stripControlCharacters } from "../../src/cli/text.js";
+import { hasControlCharacters, stripControlCharacters } from "../../src/util/text.js";
 
 describe("stripControlCharacters", () => {
   it("keeps ordinary text, tabs and newlines", () => {
@@ -24,5 +24,15 @@ describe("stripControlCharacters", () => {
 
   it("returns an empty string unchanged", () => {
     expect(stripControlCharacters("")).toBe("");
+  });
+});
+
+describe("hasControlCharacters", () => {
+  it.each(["a\tb", "a\nb", "a\rb", "a\u001bb", "a\u007fb", "a\u0085b", "a b", "a b"])("detects %j", (text) => {
+    expect(hasControlCharacters(text)).toBe(true);
+  });
+
+  it.each(["", "plain text", "é日本語🙂", "quotes \" and ' and \\"])("accepts %j", (text) => {
+    expect(hasControlCharacters(text)).toBe(false);
   });
 });

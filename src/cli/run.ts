@@ -3,7 +3,7 @@ import { runVersions } from "../commands/versions.js";
 import { EmdError } from "../errors.js";
 import { isStableMcVersion } from "../versions/compare.js";
 import type { HttpClient } from "../versions/http.js";
-import { stripControlCharacters } from "./text.js";
+import { stripControlCharacters } from "../util/text.js";
 
 const HELP = `emd: Everything Minecraft Development
 

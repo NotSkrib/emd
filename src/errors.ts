@@ -5,6 +5,9 @@ export type EmdErrorCode =
   | "HTTP_STATUS"
   | "TOO_LARGE"
   | "UNKNOWN_MC_VERSION"
+  | "BAD_PRESET"
+  | "BAD_ANSWER"
+  | "BAD_TEMPLATE"
   | "USAGE";
 
 export class EmdError extends Error {
