@@ -18,6 +18,6 @@ A single-module Paper plugin: Gradle Kotlin DSL, Java, a `plugin.yml`, a main cl
 
 ## Status
 
-Built with real Gradle on 2026-10-09: Gradle 9.5.1, Java 25, Minecraft 26.3, `paper-api:26.3.build.+`. The build is clean with `--warning-mode all`, and the jar holds the main class and a `plugin.yml` with the version filled in. That build found the `run-paper` pin and the `project` problems above.
+Built with real Gradle on 2026-10-09 (9.5.1 and 9.8.1): Java 25, Minecraft 26.3, `paper-api:26.3.build.+`. The build is clean with `--warning-mode all`, and the jar holds the main class and a `plugin.yml` with the version filled in. That build found the `run-paper` pin and the `project` problems above.
 
 Not yet proven: `gradle runServer`, and the plugin loading on a booted Paper server.

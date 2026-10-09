@@ -20,6 +20,6 @@ A single-module Velocity proxy plugin: Gradle Kotlin DSL, Java, a `velocity-plug
 
 ## Status
 
-Built with real Gradle on 2026-10-09: Gradle 9.5.1, Velocity API 4.2.0, Java 25, generated without `--mc`. The build is clean with `--warning-mode all` and the jar holds the main class and a `velocity-plugin.json` with the version filled in.
+Built with real Gradle on 2026-10-09 (9.5.1 and 9.8.1): Velocity API 4.2.0, Java 25, generated without `--mc`. The build is clean with `--warning-mode all` and the jar holds the main class and a `velocity-plugin.json` with the version filled in.
 
 Not yet proven: `gradle runVelocity`, and the proxy loading the plugin. The static `velocity-plugin.json` is modelled on what MiniMOTD's resource-factory plugin generates, not on a run of the proxy.
