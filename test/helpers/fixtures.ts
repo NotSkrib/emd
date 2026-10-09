@@ -22,6 +22,7 @@ export const FIXTURE_FILES: Record<SourceName, string> = {
   forgePromos: "forge-promotions.json",
   gradle: "gradle-current.json",
   moddevgradleMeta: "moddevgradle-maven-metadata.xml",
+  packFormats: "pack-formats.json",
 };
 
 export function fixtureText(name: string): string {

@@ -36,6 +36,7 @@ const SOURCES = {
     "https://plugins.gradle.org/m2/net/neoforged/moddev/net.neoforged.moddev.gradle.plugin/maven-metadata.xml",
     "moddevgradle-maven-metadata.xml",
   ],
+  packFormats: ["https://raw.githubusercontent.com/misode/mcmeta/summary/versions/data.min.json", "pack-formats.json"],
 };
 
 const SAFE_MC_ID = /^\d+(\.\d+){1,2}$/;
@@ -128,6 +129,25 @@ function pickFabricApi(all) {
   return [...bySuffix.values()].flatMap((builds) => lastOf(builds, FABRIC_API_BUILDS_PER_MC_VERSION));
 }
 
+/** Stable releases only, with just the fields the parser reads. */
+async function recordPackFormats() {
+  const [url, file] = SOURCES.packFormats;
+  const versions = await get(url, true);
+  const releases = versions.filter((v) => v.type === "release" && v.stable !== false && SAFE_VERSION_TOKEN.test(String(v.id)));
+  await writeJson(
+    file,
+    releases.map((v) => ({
+      id: v.id,
+      type: v.type,
+      stable: v.stable,
+      data_pack_version: v.data_pack_version,
+      data_pack_version_minor: v.data_pack_version_minor,
+      resource_pack_version: v.resource_pack_version,
+      resource_pack_version_minor: v.resource_pack_version_minor,
+    })),
+  );
+}
+
 /** The Gradle module metadata of the newest stable Velocity API, trimmed to what the parser reads. */
 async function recordVelocityModule() {
   const [url] = SOURCES.velocityApiMeta;
@@ -180,6 +200,7 @@ async function main() {
   );
   await recordMaven("velocityApiMeta", (all) => lastOf(all, 20));
   await recordVelocityModule();
+  await recordPackFormats();
   await recordMaven("loomMeta", (all) => lastOf(all, 25));
   await recordMaven("fabricApiMeta", pickFabricApi);
 

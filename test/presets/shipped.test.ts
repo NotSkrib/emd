@@ -6,6 +6,7 @@ import { validateAnswers } from "../../src/presets/answers.js";
 import { buildContext, resolvedValues } from "../../src/presets/context.js";
 import { lintManifest } from "../../src/presets/lint.js";
 import { loadPresets, type LoadedPreset } from "../../src/presets/load.js";
+import { checkPackMcmeta } from "../../src/presets/packCheck.js";
 import { planFiles } from "../../src/presets/plan.js";
 import { sampleAnswers } from "../../src/presets/samples.js";
 import type { PlannedFile } from "../../src/presets/types.js";
@@ -116,14 +117,18 @@ describe("fabric-mod output", () => {
 
 /** Lessons from building the generated projects with real Gradle. */
 describe("generated Gradle builds", () => {
-  const gradleBuilds = presets.flatMap((preset) => {
+  const gradleBuilds = presets
+    .filter((preset) => preset.manifest.family !== "pack")
+    .flatMap((preset) => {
     const files = render(preset);
     const build = files.find((file) => /^build\.gradle(\.kts)?$/.test(file.path));
     return build ? [{ id: preset.manifest.id, build: build.content, files }] : [];
   });
 
-  it("covers every shipped preset", () => {
-    expect(gradleBuilds.map((entry) => entry.id).sort()).toEqual(presets.map((preset) => preset.manifest.id).sort());
+  it("covers every shipped preset that is not a pack", () => {
+    const nonPacks = presets.filter((preset) => preset.manifest.family !== "pack");
+
+    expect(gradleBuilds.map((entry) => entry.id).sort()).toEqual(nonPacks.map((preset) => preset.manifest.id).sort());
   });
 
   it.each(gradleBuilds)("$id never reads `project` inside a filter closure (breaks the configuration cache)", ({ build }) => {
@@ -138,6 +143,68 @@ describe("generated Gradle builds", () => {
 
     expect(files.find((file) => file.path === "README.md")?.content).toContain(advice);
     expect(files.find((file) => file.path === "AGENTS.md")?.content).toContain(`Gradle ${target.tools.gradle} or newer`);
+  });
+});
+
+describe.each([
+  { id: "data-pack", kind: "data" as const, other: "resource" as const },
+  { id: "resource-pack", kind: "resource" as const, other: "data" as const },
+])("$id output", ({ id, kind, other }) => {
+  const preset = presets.find((candidate) => candidate.manifest.id === id);
+  if (!preset) throw new Error(`The ${id} preset is not shipped.`);
+  const files = render(preset);
+  const content = (file: string, from: readonly PlannedFile[] = files): string => from.find((candidate) => candidate.path === file)?.content ?? "";
+  const formats = target.packFormats;
+  if (!formats) throw new Error("The recorded fixtures have no pack format for the newest release.");
+
+  it("writes a pack.mcmeta that passes the format check", () => {
+    expect(checkPackMcmeta(JSON.parse(content("pack.mcmeta")))).toEqual([]);
+  });
+
+  it("asks for this release's format of its own kind, minor part included", () => {
+    const { pack } = JSON.parse(content("pack.mcmeta")) as { pack: { min_format: unknown; max_format: unknown } };
+
+    expect(pack.min_format).toEqual([formats[kind].major, formats[kind].minor]);
+    expect(pack.max_format).toBe(formats[kind].major);
+    expect(formats[kind].major).not.toBe(formats[other].major);
+  });
+
+  it("never writes the removed pack_format or supported_formats fields", () => {
+    expect(content("pack.mcmeta")).not.toMatch(/pack_format|supported_formats/);
+  });
+
+  it("keeps a description with quotes and backslashes valid JSON", () => {
+    const tricky = 'Says "hi" \\ and costs $5';
+    const mcmeta = JSON.parse(content("pack.mcmeta", render(preset, { description: tricky }))) as { pack: { description: string } };
+
+    expect(mcmeta.pack.description).toBe(tricky);
+  });
+});
+
+describe("data-pack layout", () => {
+  const preset = presets.find((candidate) => candidate.manifest.id === "data-pack");
+  if (!preset) throw new Error("The data-pack preset is not shipped.");
+  const files = render(preset);
+  const paths = files.map((file) => file.path);
+
+  it("uses the singular folder names Minecraft 1.21 introduced", () => {
+    expect(paths).toContain("data/my_pack/function/load.mcfunction");
+    expect(paths).toContain("data/minecraft/tags/function/load.json");
+    expect(paths.filter((path) => /\/(functions|recipes|loot_tables|advancements)\//.test(path))).toEqual([]);
+  });
+
+  it("lists its own load function in the load tag", () => {
+    const tag = files.find((file) => file.path === "data/minecraft/tags/function/load.json");
+
+    expect(JSON.parse(tag?.content ?? "{}")).toEqual({ values: ["my_pack:load"] });
+  });
+
+  it("escapes the title inside the tellraw string", () => {
+    const tricky = 'The "best" \\ pack';
+    const loaded = render(preset, { title: tricky }).find((file) => file.path === "data/my_pack/function/load.mcfunction");
+    const line = (loaded?.content ?? "").split("\n").find((candidate) => candidate.startsWith("tellraw"));
+
+    expect(JSON.parse(line?.replace("tellraw @a ", "") ?? "null")).toBe(`${tricky} loaded`);
   });
 });
 

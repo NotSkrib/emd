@@ -40,6 +40,11 @@ const SOURCE: SourceData = {
   forgePromos: { "26.3": { latest: "66.0.9" }, "26.2": { latest: "65.1.3", recommended: "65.1.0" } },
   gradle: "9.8.1",
   moddevgradle: "2.0.148",
+  packFormats: new Map([
+    ["26.3", { data: { major: 121, minor: 0 }, resource: { major: 97, minor: 1 } }],
+    ["26.2", { data: { major: 107, minor: 1 }, resource: { major: 88, minor: 0 } }],
+    ["1.21.11", { data: { major: 94, minor: 1 }, resource: { major: 75, minor: 0 } }],
+  ]),
 };
 
 describe("resolveTarget", () => {
@@ -168,6 +173,41 @@ describe("fetchJavaRequirement", () => {
     const { data } = await fetchSourceData(fixtureHttp());
 
     expect(await errorCodeOfAsync(() => fetchJavaRequirement(fixtureHttp(), data.manifest, "27.0"))).toBe("UNKNOWN_MC_VERSION");
+  });
+});
+
+describe("pack formats", () => {
+  it("are carried into the target for the chosen release", () => {
+    const target = resolveTarget(SOURCE, "26.3", JAVA_25);
+
+    expect(target.packFormats).toEqual({ data: { major: 121, minor: 0 }, resource: { major: 97, minor: 1 } });
+    expect(target.warnings.filter((warning) => /pack format/i.test(warning))).toEqual([]);
+  });
+
+  it("are absent, with one warning per pack kind, for a release the source does not list yet", () => {
+    const target = resolveTarget({ ...SOURCE, packFormats: new Map() }, "26.2", JAVA_25);
+
+    expect(target.packFormats).toBeUndefined();
+    expect(target.warnings).toContain("Data pack format is not published for 26.2 yet.");
+    expect(target.warnings).toContain("Resource pack format is not published for 26.2 yet.");
+  });
+
+  it("are read from the recorded upstream data", async () => {
+    const { data } = await fetchSourceData(fixtureHttp());
+
+    expect(data.packFormats.get(data.manifest.latestRelease)).toBeDefined();
+  });
+
+  it("are rejected when the source lists no release at all", async () => {
+    const http = fixtureHttp({ [SOURCE_URLS.packFormats]: { body: "[]", source: "network" } });
+
+    expect(await errorCodeOfAsync(() => fetchSourceData(http))).toBe("BAD_RESPONSE");
+  });
+
+  it("are rejected when the source is not a list", async () => {
+    const http = fixtureHttp({ [SOURCE_URLS.packFormats]: { body: "{}", source: "network" } });
+
+    expect(await errorCodeOfAsync(() => fetchSourceData(http))).toBe("BAD_RESPONSE");
   });
 });
 

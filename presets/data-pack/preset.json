@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "id": "data-pack",
+  "title": "Data pack (Minecraft 1.21.9 and newer)",
+  "kind": "archetype",
+  "family": "pack",
+  "platforms": ["datapack"],
+  "minecraft": { "min": "1.21.9" },
+  "inputs": [
+    { "key": "name", "type": "slug", "label": "Pack name, also used as its namespace", "example": "my_pack" },
+    { "key": "title", "type": "text", "label": "Display name", "example": "My Data Pack" },
+    { "key": "description", "type": "text", "label": "Description", "default": "A data pack." }
+  ],
+  "files": [
+    { "from": "files/pack.mcmeta", "to": "pack.mcmeta" },
+    { "from": "files/load.json", "to": "data/minecraft/tags/function/load.json" },
+    { "from": "files/load.mcfunction", "to": "data/{{input.name}}/function/load.mcfunction" },
+    { "from": "files/gitignore", "to": ".gitignore" },
+    { "from": "files/AGENTS.md", "to": "AGENTS.md" },
+    { "from": "files/README.md", "to": "README.md" }
+  ],
+  "provenance": [{ "use": "original", "license": "MIT", "paths": [] }]
+}

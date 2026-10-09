@@ -1,5 +1,6 @@
 // Generates every shipped preset from its sample answers and builds the result with Gradle.
 // A preset that renders but does not build is a broken preset, and the unit tests cannot see that.
+// A pack preset has no build, so its pack.mcmeta is checked instead.
 //
 //   npm run build
 //   node scripts/prove-presets.mjs [--preset <id>] [--gradle <path>] [--keep]
@@ -7,7 +8,7 @@
 // Needs the JDK a preset asks for (Java 25 for current Minecraft releases) and a Gradle new enough
 // for the generated build: the generated README says which. Downloads dependencies on first run.
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -38,6 +39,7 @@ async function importFromDist(file) {
 
 const { loadPresets } = await importFromDist("presets/load.js");
 const { sampleAnswers } = await importFromDist("presets/samples.js");
+const { checkPackMcmeta } = await importFromDist("presets/packCheck.js");
 
 /** Wraps a task's output in a collapsible group on GitHub Actions and a heading elsewhere. */
 async function group(title, task) {
@@ -62,6 +64,18 @@ async function applicationJars(projectDir) {
   return names.filter((name) => name.endsWith(".jar") && !NON_APP_JAR.test(name));
 }
 
+/** Returns undefined when the generated pack.mcmeta passes the format check, otherwise what is wrong with it. */
+async function checkPackProject(projectDir) {
+  let mcmeta;
+  try {
+    mcmeta = JSON.parse(await readFile(path.join(projectDir, "pack.mcmeta"), "utf8"));
+  } catch (error) {
+    return `pack.mcmeta is missing or is not JSON (${error.message})`;
+  }
+  const problems = checkPackMcmeta(mcmeta);
+  return problems.length === 0 ? undefined : `pack.mcmeta: ${problems.join(" ")}`;
+}
+
 /** Returns undefined when the preset builds, otherwise what went wrong. */
 async function prove(manifest) {
   const workDir = await mkdtemp(path.join(os.tmpdir(), `emd-prove-${manifest.id}-`));
@@ -72,6 +86,8 @@ async function prove(manifest) {
     const mcArgs = manifest.family === "proxy" ? [] : ["--mc", "latest"];
     const generated = runCommand(process.execPath, [CLI, "new", "--preset", manifest.id, ...mcArgs, ...setArgs, "--dir", projectDir], ROOT);
     if (!generated) return "emd new failed";
+    // A pack has no build. What can be proven without running the game is that its metadata is right.
+    if (manifest.family === "pack") return checkPackProject(projectDir);
 
     const built = runCommand(gradle, ["--no-daemon", "--console=plain", "--warning-mode", "all", "build"], projectDir);
     if (!built) return "gradle build failed";

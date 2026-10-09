@@ -14,6 +14,7 @@ import { parseGradleVersion } from "./gradle.js";
 import type { HttpClient } from "./http.js";
 import { parseMavenVersions } from "./maven.js";
 import { parseJavaMajor, parseMojangManifest } from "./mojang.js";
+import { parsePackFormats } from "./packFormats.js";
 import {
   listNeoForgeMcVersions,
   neoForgeChannel,
@@ -30,6 +31,7 @@ import type {
   JavaRequirement,
   MojangManifest,
   NeoForgeBuild,
+  PackFormats,
   PaperApiResolution,
   VelocityApi,
 } from "./types.js";
@@ -57,6 +59,8 @@ export interface SourceData {
   forgePromos: ForgePromos;
   gradle: string;
   moddevgradle: string;
+  /** Each release's data pack and resource pack format, keyed by Minecraft version. */
+  packFormats: ReadonlyMap<string, PackFormats>;
 }
 
 export interface VersionMatrix {
@@ -81,6 +85,8 @@ export interface TargetInfo {
   fabric?: FabricTarget;
   neoforge?: NeoForgeBuild;
   forge?: ForgeBuilds;
+  /** Absent for a release the pack format source does not list yet. */
+  packFormats?: PackFormats;
   tools: { gradle: string; moddevgradle: string };
   warnings: string[];
 }
@@ -111,8 +117,9 @@ export async function fetchSourceData(http: HttpClient): Promise<{ data: SourceD
     load(http, "forgePromos", fromJson("forgePromos", parseNonEmptyForgePromos)),
     load(http, "gradle", fromJson("gradle", parseGradleVersion)),
     load(http, "moddevgradleMeta", (body) => requireStable(parseMavenVersions(body), "moddevgradleMeta")),
+    load(http, "packFormats", fromJson("packFormats", parseNonEmptyPackFormats)),
   ]);
-  const [manifest, paper, folia, paperApi, velocityApi, fabricGame, fabricLoader, fabricApi, loom, neoForge, forge, gradle, moddev] = loaded;
+  const [manifest, paper, folia, paperApi, velocityApi, fabricGame, fabricLoader, fabricApi, loom, neoForge, forge, gradle, moddev, packFormats] = loaded;
 
   const data: SourceData = {
     manifest: manifest.value,
@@ -128,6 +135,7 @@ export async function fetchSourceData(http: HttpClient): Promise<{ data: SourceD
     forgePromos: forge.value,
     gradle: gradle.value,
     moddevgradle: moddev.value,
+    packFormats: packFormats.value,
   };
   const warnings = loaded.filter((entry) => entry.stale).map((entry) => staleWarning(SOURCE_URLS[entry.name], entry.ageMs));
   return { data, warnings };
@@ -214,6 +222,7 @@ export function resolveTarget(data: SourceData, mcVersion: string, java: JavaReq
   const fabric = resolveFabric(data, mcVersion);
   const neoforge = resolveNeoForge(mcVersion, data.neoForgeVersions);
   const forge = Object.hasOwn(data.forgePromos, mcVersion) ? data.forgePromos[mcVersion] : undefined;
+  const packFormats = data.packFormats.get(mcVersion);
 
   const warnings = [
     ...floorWarning(mcVersion),
@@ -224,6 +233,7 @@ export function resolveTarget(data: SourceData, mcVersion: string, java: JavaReq
     ...fabric.warnings,
     ...neoForgeWarnings(data.neoForgeVersions, neoforge, mcVersion),
     ...(forge ? [] : [`Forge has no build for ${mcVersion}.`]),
+    ...(packFormats ? [] : [`Data pack format is not published for ${mcVersion} yet.`, `Resource pack format is not published for ${mcVersion} yet.`]),
   ];
 
   return {
@@ -235,6 +245,7 @@ export function resolveTarget(data: SourceData, mcVersion: string, java: JavaReq
     fabric: fabric.target,
     neoforge,
     forge,
+    ...(packFormats ? { packFormats } : {}),
     tools: { gradle: data.gradle, moddevgradle: data.moddevgradle },
     warnings,
   };
@@ -263,6 +274,14 @@ function parseNonEmptyForgePromos(json: unknown): ForgePromos {
     throw new EmdError("BAD_RESPONSE", `Unexpected response: ${SOURCE_URLS.forgePromos} lists no promotions.`);
   }
   return promos;
+}
+
+function parseNonEmptyPackFormats(json: unknown): Map<string, PackFormats> {
+  const formats = parsePackFormats(json);
+  if (formats.size === 0) {
+    throw new EmdError("BAD_RESPONSE", `Unexpected response: ${SOURCE_URLS.packFormats} lists no release with a pack format.`);
+  }
+  return formats;
 }
 
 function nonEmpty<T>(items: readonly T[], name: SourceName): T[] {

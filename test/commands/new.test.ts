@@ -80,6 +80,15 @@ describe("relevantWarnings", () => {
     expect(relevantWarnings(warnings, ["fabric"])).toEqual([warnings[4], warnings[5], warnings[6]]);
   });
 
+  it("keeps only the pack warning that belongs to the kind of pack the preset makes", () => {
+    const packWarnings = ["Data pack format is not published for 26.4 yet.", "Resource pack format is not published for 26.4 yet."];
+    const all = [...warnings, ...packWarnings];
+
+    expect(relevantWarnings(all, ["datapack"])).toEqual([warnings[5], warnings[6], packWarnings[0]]);
+    expect(relevantWarnings(all, ["resourcepack"])).toEqual([warnings[5], warnings[6], packWarnings[1]]);
+    expect(relevantWarnings(all, ["paper"])).toEqual([warnings[0], warnings[5], warnings[6]]);
+  });
+
   it("does not mistake NeoForge for Forge", () => {
     const forOnlyForge = relevantWarnings(warnings, ["forge"]);
 

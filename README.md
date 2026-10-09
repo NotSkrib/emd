@@ -6,7 +6,7 @@ One toolkit for building Minecraft plugins, mods and packs with an AI agent.
 - **Presets proven on real projects.** Planned. Each preset records which open-source project it came from and is rebuilt against the newest release in CI.
 - **Skills and subagents** for Claude Code, OpenCode, VS Code Copilot, Antigravity, Codex, Cursor and Gemini CLI. Planned.
 
-Status: early development. The live version resolver and four presets (a Paper plugin, a Velocity plugin, a Fabric mod and a NeoForge mod) work. All are unit tested, and the `presets` workflow generates each one and builds it with Gradle against the newest Minecraft release on every change and every night. Nothing has booted a server or client yet. Skills and the installer are not built yet, and nothing is published to npm.
+Status: early development. The live version resolver and six presets work: a Paper plugin, a Velocity plugin, a Fabric mod, a NeoForge mod, a data pack and a resource pack. All are unit tested, and the `presets` workflow generates each one against the newest Minecraft release on every change and every night. The four with a build are built with Gradle. The two packs have none, so their `pack.mcmeta` is checked instead. Nothing has booted a server or client yet. Skills and the installer are not built yet, and nothing is published to npm.
 
 ## Try it
 

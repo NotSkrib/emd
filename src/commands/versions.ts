@@ -67,6 +67,9 @@ export function formatTarget(info: TargetInfo): string {
       : "  Fabric    not supported",
     info.neoforge ? `  NeoForge  ${info.neoforge.version} (${info.neoforge.channel})` : "  NeoForge  not available",
     info.forge ? `  Forge     ${formatForge(info.forge.latest, info.forge.recommended)}` : "  Forge     not available",
+    info.packFormats
+      ? `  Packs     data ${info.packFormats.data.major}.${info.packFormats.data.minor}, resource ${info.packFormats.resource.major}.${info.packFormats.resource.minor}`
+      : "  Packs     format not published yet",
     "",
     `  Gradle ${info.tools.gradle}, ModDevGradle ${info.tools.moddevgradle}`,
   ];

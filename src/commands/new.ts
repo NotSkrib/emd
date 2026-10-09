@@ -89,6 +89,8 @@ const PLATFORM_LABELS: Readonly<Record<string, string>> = {
   fabric: "Fabric",
   neoforge: "NeoForge",
   forge: "Forge",
+  datapack: "Data pack",
+  resourcepack: "Resource pack",
 };
 
 /** Keeps the warnings about the platforms a preset targets, plus general ones such as a stale cache or an old Minecraft version. */

@@ -89,6 +89,23 @@ describe("resolvedValues", () => {
     expect(resolvedValues(target)).toMatchObject({ java: "21", velocityJava: "25" });
   });
 
+  it("includes the major and minor pack formats of both pack kinds", () => {
+    const target: TargetInfo = { ...TARGET, packFormats: { data: { major: 107, minor: 1 }, resource: { major: 88, minor: 0 } } };
+
+    expect(resolvedValues(target)).toMatchObject({
+      dataPackFormat: "107",
+      dataPackFormatMinor: "1",
+      resourcePackFormat: "88",
+      resourcePackFormatMinor: "0",
+    });
+  });
+
+  it("leaves the pack formats out for a release without any", () => {
+    const names = Object.keys(resolvedValues(TARGET));
+
+    expect(names.filter((name) => /PackFormat/.test(name))).toEqual([]);
+  });
+
   it("leaves the Velocity Java version out until it has been looked up", () => {
     const target: TargetInfo = { ...TARGET, velocity: { stable: "4.2.0" } };
 

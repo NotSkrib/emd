@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "id": "resource-pack",
+  "title": "Resource pack (Minecraft 1.21.9 and newer)",
+  "kind": "archetype",
+  "family": "pack",
+  "platforms": ["resourcepack"],
+  "minecraft": { "min": "1.21.9" },
+  "inputs": [
+    { "key": "name", "type": "slug", "label": "Pack name", "example": "my_pack" },
+    { "key": "title", "type": "text", "label": "Display name", "example": "My Resource Pack" },
+    { "key": "description", "type": "text", "label": "Description", "default": "A resource pack." }
+  ],
+  "files": [
+    { "from": "files/pack.mcmeta", "to": "pack.mcmeta" },
+    { "from": "files/en_us.json", "to": "assets/minecraft/lang/en_us.json" },
+    { "from": "files/gitignore", "to": ".gitignore" },
+    { "from": "files/AGENTS.md", "to": "AGENTS.md" },
+    { "from": "files/README.md", "to": "README.md" }
+  ],
+  "provenance": [{ "use": "original", "license": "MIT", "paths": [] }]
+}

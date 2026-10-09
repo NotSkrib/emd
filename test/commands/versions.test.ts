@@ -52,6 +52,21 @@ describe("runVersions", () => {
     expect(output).toContain("NeoForge");
   });
 
+  it("shows the pack formats of one Minecraft version, with their minor parts", async () => {
+    const output = await runVersions({ mc: LATEST, json: false }, fixtureHttp());
+
+    expect(output).toMatch(/Packs\s+data \d+\.\d+, resource \d+\.\d+/);
+  });
+
+  it("includes the pack formats in the JSON for one Minecraft version", async () => {
+    const parsed = JSON.parse(await runVersions({ mc: LATEST, json: true }, fixtureHttp())) as {
+      packFormats?: { data: { major: number; minor: number }; resource: { major: number; minor: number } };
+    };
+
+    expect(parsed.packFormats?.data.major).toBeGreaterThan(0);
+    expect(parsed.packFormats?.resource.major).toBeGreaterThan(0);
+  });
+
   it("says when Java was assumed", async () => {
     const manifest = parseMojangManifest(fixtureJson("mojang-manifest.json"));
     const url = manifest.releases.find((release) => release.id === "1.12.2")?.versionUrl ?? "";

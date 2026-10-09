@@ -36,6 +36,18 @@ export interface VelocityApi {
   java?: number;
 }
 
+/** A pack format as Minecraft versions it: a major number and a backwards-compatible minor one. */
+export interface PackVersion {
+  major: number;
+  minor: number;
+}
+
+/** What a release says in `pack.mcmeta` terms for each kind of pack. */
+export interface PackFormats {
+  data: PackVersion;
+  resource: PackVersion;
+}
+
 export interface ForgeBuilds {
   latest?: string;
   recommended?: string;

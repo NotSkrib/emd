@@ -16,6 +16,8 @@ export const SOURCE_URLS = {
   forgePromos: "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json",
   gradle: "https://services.gradle.org/versions/current",
   moddevgradleMeta: "https://plugins.gradle.org/m2/net/neoforged/moddev/net.neoforged.moddev.gradle.plugin/maven-metadata.xml",
+  /** misode/mcmeta, a community mirror of the version data Mojang ships inside each release. Read at run time, never copied. */
+  packFormats: "https://raw.githubusercontent.com/misode/mcmeta/summary/versions/data.min.json",
 } as const;
 
 export type SourceName = keyof typeof SOURCE_URLS;
