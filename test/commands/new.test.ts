@@ -92,6 +92,81 @@ describe("relevantWarnings", () => {
   });
 });
 
+describe("runNew for a proxy preset", () => {
+  beforeEach(async () => {
+    await mkdir(path.join(presetsDir, "proxy-demo", "files"), { recursive: true });
+    await writeFile(
+      path.join(presetsDir, "proxy-demo", "files", "x.txt"),
+      "velocity={{resolved.velocityApi}} velocity-java={{resolved.velocityJava}} minecraft-java={{resolved.java}}\n",
+    );
+    await writeFile(
+      path.join(presetsDir, "proxy-demo", "preset.json"),
+      JSON.stringify({
+        schema: 1,
+        id: "proxy-demo",
+        title: "Proxy demo",
+        kind: "archetype",
+        family: "proxy",
+        platforms: ["velocity"],
+        inputs: [{ key: "name", type: "identifier", label: "Name" }],
+        files: [{ from: "files/x.txt", to: "x.txt" }],
+        provenance: [{ use: "original", license: "MIT" }],
+      }),
+    );
+  });
+
+  const proxyArgs = (overrides: Partial<NewArgs> = {}): NewArgs => {
+    const { mc: _ignored, ...rest } = args({ preset: "proxy-demo" });
+    return { ...rest, ...overrides };
+  };
+  const proxyOutput = async (overrides: Partial<NewArgs> = {}): Promise<string> => {
+    await runNew(proxyArgs(overrides), deps());
+    return readFile(path.join(work, "Demo", "x.txt"), "utf8");
+  };
+
+  it("needs no --mc, and takes Java from the Velocity API instead of from Minecraft", async () => {
+    expect(await proxyOutput()).toMatch(/^velocity=\d+\.\d+\.\d+ velocity-java=25 minecraft-java=25\n$/);
+  });
+
+  it("keeps Velocity's Java version when an older Minecraft version is given", async () => {
+    expect(await proxyOutput({ mc: "1.21.11" })).toMatch(/^velocity=\d+\.\d+\.\d+ velocity-java=25 minecraft-java=21\n$/);
+  });
+
+  it("does not claim a Minecraft version in the summary when none was asked for", async () => {
+    const output = await runNew(proxyArgs({ dryRun: true }), deps());
+
+    expect(output).toContain("Would create proxy-demo in ");
+    expect(output).not.toContain("for Minecraft");
+  });
+
+  it("leaves the Minecraft version out of the JSON summary when none was asked for", async () => {
+    const parsed = JSON.parse(await runNew(proxyArgs({ json: true, dryRun: true }), deps())) as Record<string, unknown>;
+
+    expect(parsed).not.toHaveProperty("mcVersion");
+  });
+
+  it("still requires --mc for a preset that depends on the Minecraft version", async () => {
+    const { mc: _ignored, ...withoutMc } = args();
+
+    await expect(runNew(withoutMc, deps())).rejects.toThrow(/--mc is required/);
+    expect(await errorCodeOfAsync(() => runNew(withoutMc, deps()))).toBe("USAGE");
+  });
+
+  it("does not look up Velocity for a preset that does not target it", async () => {
+    const asked: string[] = [];
+    const recording = {
+      async get(url: string) {
+        asked.push(url);
+        return fixtureHttp().get(url);
+      },
+    };
+
+    await runNew(args(), { http: recording, presetsDir, cwd: work });
+
+    expect(asked.filter((url) => url.endsWith(".module"))).toEqual([]);
+  });
+});
+
 describe("runNew", () => {
   it("creates the files with the versions the resolver found", async () => {
     const output = await runNew(args(), deps());

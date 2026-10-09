@@ -1,3 +1,6 @@
+import { EmdError } from "../errors.js";
+import { isVersionToken } from "../util/json.js";
+
 /** Every upstream the resolver reads. Keep in sync with scripts/record-fixtures.mjs (a test enforces it). */
 export const SOURCE_URLS = {
   mojangManifest: "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json",
@@ -16,6 +19,19 @@ export const SOURCE_URLS = {
 } as const;
 
 export type SourceName = keyof typeof SOURCE_URLS;
+
+const VELOCITY_API_DIRECTORY = SOURCE_URLS.velocityApiMeta.slice(0, -"maven-metadata.xml".length);
+
+/**
+ * Gradle module metadata for one Velocity API release. It is built per version, so it is not in
+ * SOURCE_URLS, but it lives on a host that is. The version is checked so it cannot add a path or query.
+ */
+export function velocityModuleUrl(version: string): string {
+  if (!isVersionToken(version)) {
+    throw new EmdError("BAD_URL", `Not a plain Velocity version: ${JSON.stringify(version)}.`);
+  }
+  return `${VELOCITY_API_DIRECTORY}${version}/velocity-api-${version}.module`;
+}
 
 /**
  * The only hosts the HTTP client will contact: exactly the hosts above. Mojang's per-version

@@ -18,6 +18,7 @@ export function resolvedValues(target: TargetInfo): Record<string, string> {
     ["moddevgradle", target.tools.moddevgradle],
     ["paperApi", target.paper?.dependencyVersion],
     ["velocityApi", target.velocity?.stable],
+    ["velocityJava", target.velocity?.java === undefined ? undefined : String(target.velocity.java)],
     ["fabricLoader", target.fabric?.loader],
     ["fabricApi", target.fabric?.api],
     ["loom", target.fabric?.loom],

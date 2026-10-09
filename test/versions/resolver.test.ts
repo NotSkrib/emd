@@ -6,7 +6,9 @@ import {
   buildMatrix,
   fetchJavaRequirement,
   fetchSourceData,
+  fetchVelocityJava,
   resolveTarget,
+  withVelocityJava,
   type SourceData,
 } from "../../src/versions/resolver.js";
 import { SOURCE_URLS } from "../../src/versions/sources.js";
@@ -166,6 +168,61 @@ describe("fetchJavaRequirement", () => {
     const { data } = await fetchSourceData(fixtureHttp());
 
     expect(await errorCodeOfAsync(() => fetchJavaRequirement(fixtureHttp(), data.manifest, "27.0"))).toBe("UNKNOWN_MC_VERSION");
+  });
+});
+
+describe("fetchVelocityJava", () => {
+  const MODULE_URL = "https://repo.papermc.io/repository/maven-public/com/velocitypowered/velocity-api/4.2.0/velocity-api-4.2.0.module";
+
+  it("reads the Java version Velocity's API was compiled for", async () => {
+    expect(await fetchVelocityJava(fixtureHttp(), "4.2.0")).toBe(25);
+  });
+
+  it("asks for the module of exactly the version it was given", async () => {
+    const asked: string[] = [];
+    const recording = {
+      async get(url: string) {
+        asked.push(url);
+        return fixtureHttp().get(url);
+      },
+    };
+
+    await fetchVelocityJava(recording, "4.2.0");
+
+    expect(asked).toEqual([MODULE_URL]);
+  });
+
+  it.each(["../../x", "4.2.0/../../y", "4.2 0", "", "4.2.0?x=1"])("refuses the version %j", async (version) => {
+    expect(await errorCodeOfAsync(() => fetchVelocityJava(fixtureHttp(), version))).toBe("BAD_URL");
+  });
+
+  it("reports a module that does not say which Java it needs", async () => {
+    const http = fixtureHttp({ [MODULE_URL]: { body: JSON.stringify({ variants: [] }), source: "network" } });
+
+    expect(await errorCodeOfAsync(() => fetchVelocityJava(http, "4.2.0"))).toBe("BAD_RESPONSE");
+  });
+
+  it("reports a module that is not JSON", async () => {
+    const http = fixtureHttp({ [MODULE_URL]: { body: "<html>proxy error</html>", source: "network" } });
+
+    expect(await errorCodeOfAsync(() => fetchVelocityJava(http, "4.2.0"))).toBe("BAD_RESPONSE");
+  });
+});
+
+describe("withVelocityJava", () => {
+  const target = resolveTarget(SOURCE, "26.3", JAVA_25);
+
+  it("returns a copy that knows the Java version, leaving the original untouched", () => {
+    const updated = withVelocityJava(target, 25);
+
+    expect(updated.velocity).toEqual({ stable: "4.2.0", snapshot: "4.2.1-SNAPSHOT", java: 25 });
+    expect(target.velocity).toEqual({ stable: "4.2.0", snapshot: "4.2.1-SNAPSHOT" });
+  });
+
+  it("returns the target as it was when there is no Velocity release", () => {
+    const without = resolveTarget({ ...SOURCE, velocityApiVersions: ["4.2.1-SNAPSHOT"] }, "26.3", JAVA_25);
+
+    expect(withVelocityJava(without, 25)).toBe(without);
   });
 });
 

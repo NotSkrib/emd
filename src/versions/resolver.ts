@@ -9,6 +9,7 @@ import {
   resolveFabricApi,
 } from "./fabric.js";
 import { parseForgePromos } from "./forge.js";
+import { parseGradleModule } from "./gradleModule.js";
 import { parseGradleVersion } from "./gradle.js";
 import type { HttpClient } from "./http.js";
 import { parseMavenVersions } from "./maven.js";
@@ -21,7 +22,7 @@ import {
   resolveNeoForge,
 } from "./neoforge.js";
 import { parseFillMcVersions, resolvePaperApi, resolveVelocityApi } from "./paper.js";
-import { SOURCE_URLS, type SourceName } from "./sources.js";
+import { SOURCE_URLS, velocityModuleUrl, type SourceName } from "./sources.js";
 import type {
   FabricTarget,
   ForgeBuilds,
@@ -173,6 +174,32 @@ export async function fetchJavaRequirement(
     },
   });
   return parse(response.body);
+}
+
+/**
+ * Reads the Java version Velocity's API was compiled for from its Gradle module metadata. A proxy
+ * plugin cannot target an older Java than this, and it has nothing to do with the Minecraft version.
+ */
+export async function fetchVelocityJava(http: HttpClient, version: string): Promise<number> {
+  const url = velocityModuleUrl(version);
+  const parse = (body: string): number => {
+    const { jvmVersion } = parseGradleModule(parseJsonText(body, url));
+    if (jvmVersion === undefined) {
+      throw new EmdError("BAD_RESPONSE", `Unexpected response: ${url} does not say which Java version Velocity ${version} needs.`);
+    }
+    return jvmVersion;
+  };
+  const response = await http.get(url, {
+    validate: (body) => {
+      parse(body);
+    },
+  });
+  return parse(response.body);
+}
+
+/** A copy of the target that knows the Java version Velocity needs. Unchanged when there is no Velocity release. */
+export function withVelocityJava(target: TargetInfo, java: number): TargetInfo {
+  return target.velocity ? { ...target, velocity: { ...target.velocity, java } } : target;
 }
 
 export function resolveTarget(data: SourceData, mcVersion: string, java: JavaRequirement): TargetInfo {

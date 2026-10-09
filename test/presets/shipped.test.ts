@@ -7,7 +7,7 @@ import { lintManifest } from "../../src/presets/lint.js";
 import { loadPresets, type LoadedPreset } from "../../src/presets/load.js";
 import { planFiles } from "../../src/presets/plan.js";
 import type { PlannedFile } from "../../src/presets/types.js";
-import { fetchJavaRequirement, fetchSourceData, resolveTarget } from "../../src/versions/resolver.js";
+import { fetchJavaRequirement, fetchSourceData, fetchVelocityJava, resolveTarget, withVelocityJava } from "../../src/versions/resolver.js";
 import { fixtureHttp } from "../helpers/fixtures.js";
 
 const PRESETS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "presets");
@@ -16,7 +16,10 @@ const presets = await loadPresets(PRESETS_DIR);
 const http = fixtureHttp();
 const { data } = await fetchSourceData(http);
 const latest = data.manifest.latestRelease;
-const target = resolveTarget(data, latest, await fetchJavaRequirement(http, data.manifest, latest));
+const resolved = resolveTarget(data, latest, await fetchJavaRequirement(http, data.manifest, latest));
+if (!resolved.velocity) throw new Error("The recorded fixtures have no stable Velocity release.");
+/** The same lookups `emd new` does, so a preset can use every `resolved.*` value. */
+const target = withVelocityJava(resolved, await fetchVelocityJava(http, resolved.velocity.stable));
 
 /** Renders a preset using each input's default, or its example when it has no default. */
 function render(preset: LoadedPreset): PlannedFile[] {
@@ -128,6 +131,46 @@ describe("generated Gradle builds", () => {
 
     expect(files.find((file) => file.path === "README.md")?.content).toContain(advice);
     expect(files.find((file) => file.path === "AGENTS.md")?.content).toContain(`Gradle ${target.tools.gradle} or newer`);
+  });
+});
+
+describe("velocity-plugin output", () => {
+  const preset = presets.find((candidate) => candidate.manifest.id === "velocity-plugin");
+  const files = preset ? render(preset) : [];
+  const content = (file: string): string => files.find((candidate) => candidate.path === file)?.content ?? "";
+
+  it("uses the Velocity API and the Java version the API was compiled for", () => {
+    expect(preset).toBeDefined();
+    expect(content("build.gradle.kts")).toContain(`velocity-api:${target.velocity?.stable}`);
+    expect(content("build.gradle.kts")).toContain(`JavaLanguageVersion.of(${target.velocity?.java})`);
+    expect(content("build.gradle.kts")).toContain(`options.release.set(${target.velocity?.java})`);
+    expect(content("build.gradle.kts")).toContain(`velocityVersion("${target.velocity?.stable}")`);
+  });
+
+  it("does not depend on a Minecraft version", () => {
+    expect(preset?.manifest.minecraft).toEqual({});
+    expect(files.map((file) => file.content).join("\n")).not.toContain(latest);
+  });
+
+  it("writes a descriptor that parses and points at the generated class", () => {
+    const descriptor = JSON.parse(content("src/main/resources/velocity-plugin.json") || "{}") as Record<string, unknown>;
+
+    expect(descriptor).toEqual({
+      id: "my_proxy_plugin",
+      name: "MyProxyPlugin",
+      version: "@version@",
+      description: "A Velocity plugin.",
+      authors: ["YourName"],
+      main: "dev.example.myproxyplugin.MyProxyPlugin",
+    });
+    expect(files.map((file) => file.path)).toContain("src/main/java/dev/example/myproxyplugin/MyProxyPlugin.java");
+  });
+
+  it("gives the main class the constructor Velocity builds it with", () => {
+    const source = content("src/main/java/dev/example/myproxyplugin/MyProxyPlugin.java");
+
+    expect(source).toContain("@Inject");
+    expect(source).toContain("@Subscribe");
   });
 });
 

@@ -13,7 +13,7 @@ Usage:
   emd versions [--mc <version>] [--json] [--refresh]
   emd preset list [--json]
   emd preset show <id> [--json]
-  emd new --preset <id> --mc <version> [--set key=value ...] [--dir <path>] [--dry-run] [--force] [--json]
+  emd new --preset <id> [--mc <version>] [--set key=value ...] [--dir <path>] [--dry-run] [--force] [--json]
   emd --version
   emd --help
 `;
@@ -27,12 +27,12 @@ Live Minecraft and platform versions from the official APIs.
   --refresh        Ignore cached responses and fetch fresh data
 `;
 
-const NEW_HELP = `Usage: emd new --preset <id> --mc <version> [options]
+const NEW_HELP = `Usage: emd new --preset <id> [--mc <version>] [options]
 
 Creates a project from a preset, using live versions for the chosen Minecraft release.
 
   --preset <id>        Which preset to use (see \`emd preset list\`)
-  --mc <version>       Minecraft release to target, for example 26.3
+  --mc <version>       Minecraft release to target, for example 26.3. Required, except for proxy presets such as velocity-plugin
   --set key=value      Answer one of the preset's inputs (see \`emd preset show <id>\`). Repeatable.
   --dir <path>         Where to create the project. Default: a folder named after the name input
   --dry-run            Show what would be created without writing anything
@@ -158,11 +158,10 @@ async function newCommand(args: readonly string[], env: CliEnvironment, output: 
     return EXIT_OK;
   }
   if (values.preset === undefined) throw new EmdError("USAGE", "--preset is required. List the presets with `emd preset list`.");
-  if (values.mc === undefined) throw new EmdError("USAGE", "--mc is required, for example --mc 26.3.");
 
   const request = {
     preset: values.preset,
-    mc: requireMinecraft(values.mc),
+    ...(values.mc === undefined ? {} : { mc: requireMinecraft(values.mc) }),
     set: parseSetOptions(values.set ?? []),
     ...(values.dir === undefined ? {} : { dir: values.dir }),
     force: values.force === true,

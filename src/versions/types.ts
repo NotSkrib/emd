@@ -32,6 +32,8 @@ export interface PaperApiResolution {
 export interface VelocityApi {
   stable: string;
   snapshot?: string;
+  /** The Java version the stable API was compiled for. A plugin cannot target an older one. Filled in by `fetchVelocityJava`. */
+  java?: number;
 }
 
 export interface ForgeBuilds {

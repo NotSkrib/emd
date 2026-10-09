@@ -6,7 +6,7 @@ One toolkit for building Minecraft plugins, mods and packs with an AI agent.
 - **Presets proven on real projects.** Planned. Each preset records which open-source project it came from and is rebuilt against the newest release in CI.
 - **Skills and subagents** for Claude Code, OpenCode, VS Code Copilot, Antigravity, Codex, Cursor and Gemini CLI. Planned.
 
-Status: early development. The live version resolver and two presets (a Paper plugin and a Fabric mod) work. Both are unit tested, and both have been built once by hand with real Gradle against Minecraft 26.3; no CI job does that yet, and nothing has booted a server or client. Skills and the installer are not built yet, and nothing is published to npm.
+Status: early development. The live version resolver and three presets (a Paper plugin, a Velocity plugin and a Fabric mod) work. All are unit tested, and each has been built once by hand with real Gradle; no CI job does that yet, and nothing has booted a server or client. Skills and the installer are not built yet, and nothing is published to npm.
 
 ## Try it
 
@@ -42,6 +42,13 @@ node dist/cli.js preset list
 node dist/cli.js preset show paper-plugin-gradle
 node dist/cli.js new --preset paper-plugin-gradle --mc 26.3 \
   --set name=MyPlugin --set package=dev.example.myplugin --set author=YourName
+```
+
+A proxy plugin is not tied to one Minecraft release, so `--mc` is optional for it, and its Java version comes from the Velocity API itself:
+
+```bash
+node dist/cli.js new --preset velocity-plugin \
+  --set name=MyProxyPlugin --set pluginId=my_proxy_plugin --set package=dev.example.myproxyplugin --set author=YourName
 ```
 
 Add `--dry-run` to see the files first, or `--json` for output a script or an AI agent can read. It never overwrites existing files unless you pass `--force`. Free-text answers such as the description are escaped for each file they land in, and every generated project gets its own `AGENTS.md` with the exact build and run commands.

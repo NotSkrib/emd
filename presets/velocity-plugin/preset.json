@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "velocity-plugin",
+  "title": "Velocity proxy plugin (Gradle Kotlin DSL, Java)",
+  "kind": "archetype",
+  "family": "proxy",
+  "platforms": ["velocity"],
+  "inputs": [
+    { "key": "name", "type": "identifier", "label": "Main class name", "example": "MyProxyPlugin" },
+    { "key": "pluginId", "type": "slug", "label": "Plugin id", "example": "my_proxy_plugin" },
+    { "key": "package", "type": "package", "label": "Java package", "example": "dev.example.myproxyplugin" },
+    { "key": "version", "type": "version", "label": "Plugin version", "default": "0.1.0" },
+    { "key": "description", "type": "text", "label": "Description", "default": "A Velocity plugin." },
+    { "key": "author", "type": "text", "label": "Author", "example": "YourName" }
+  ],
+  "files": [
+    { "from": "files/settings.gradle.kts", "to": "settings.gradle.kts" },
+    { "from": "files/build.gradle.kts", "to": "build.gradle.kts" },
+    { "from": "files/velocity-plugin.json", "to": "src/main/resources/velocity-plugin.json" },
+    { "from": "files/Plugin.java", "to": "src/main/java/{{derived.packagePath}}/{{input.name}}.java" },
+    { "from": "files/gitignore", "to": ".gitignore" },
+    { "from": "files/AGENTS.md", "to": "AGENTS.md" },
+    { "from": "files/README.md", "to": "README.md" }
+  ],
+  "provenance": [
+    {
+      "use": "derived",
+      "repo": "jpenilla/MiniMOTD",
+      "commit": "1445370dc7e9703466c00d8f62f93025fe317697",
+      "license": "MIT",
+      "paths": [
+        "platform/velocity/build.gradle.kts",
+        "platform/velocity/src/main/java/xyz/jpenilla/minimotd/velocity/MiniMOTDVelocity.java"
+      ]
+    }
+  ]
+}

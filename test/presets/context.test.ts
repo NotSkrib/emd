@@ -82,6 +82,18 @@ describe("resolvedValues", () => {
 
     expect(resolvedValues(target).velocityApi).toBe("4.2.0");
   });
+
+  it("includes the Java version Velocity needs, separately from the Minecraft one", () => {
+    const target: TargetInfo = { ...TARGET, java: { major: 21, source: "mojang" }, velocity: { stable: "4.2.0", java: 25 } };
+
+    expect(resolvedValues(target)).toMatchObject({ java: "21", velocityJava: "25" });
+  });
+
+  it("leaves the Velocity Java version out until it has been looked up", () => {
+    const target: TargetInfo = { ...TARGET, velocity: { stable: "4.2.0" } };
+
+    expect(resolvedValues(target)).not.toHaveProperty("velocityJava");
+  });
 });
 
 describe("buildContext", () => {

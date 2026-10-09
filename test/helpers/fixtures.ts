@@ -41,11 +41,16 @@ export function fixtureHttp(overrides: Record<string, HttpResponse> = {}): HttpC
     async get(url: string): Promise<HttpResponse> {
       const override = overrides[url];
       if (override) return override;
-      const file = byUrl.get(url) ?? mojangVersionFixture(url);
+      const file = byUrl.get(url) ?? mojangVersionFixture(url) ?? velocityModuleFixture(url);
       if (!file) throw new EmdError("NETWORK", `No fixture recorded for ${url}`);
       return { body: fixtureText(file), source: "network" };
     },
   };
+}
+
+/** Every Velocity API version answers with the recorded 4.2.0 module, so tests rely on its shape, not on one version number. */
+function velocityModuleFixture(url: string): string | undefined {
+  return /\/velocity-api-[^/]+\.module$/.test(url) ? "velocity-api-module.json" : undefined;
 }
 
 function mojangVersionFixture(url: string): string | undefined {

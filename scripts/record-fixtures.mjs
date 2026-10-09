@@ -39,6 +39,7 @@ const SOURCES = {
 };
 
 const SAFE_MC_ID = /^\d+(\.\d+){1,2}$/;
+const SAFE_VERSION_TOKEN = /^[0-9A-Za-z][0-9A-Za-z._+-]{0,63}$/;
 const MOJANG_METADATA_PREFIX = "https://piston-meta.mojang.com/";
 const KEEP_MOJANG_IDS = new Set(["26.2", "26.1.2", "1.21.11", "1.21.1", "1.12.2"]);
 const MOJANG_VERSION_FIXTURES = ["1.21.11", "1.12.2"];
@@ -127,6 +128,16 @@ function pickFabricApi(all) {
   return [...bySuffix.values()].flatMap((builds) => lastOf(builds, FABRIC_API_BUILDS_PER_MC_VERSION));
 }
 
+/** The Gradle module metadata of the newest stable Velocity API, trimmed to what the parser reads. */
+async function recordVelocityModule() {
+  const [url] = SOURCES.velocityApiMeta;
+  const release = /<release>([^<]+)<\/release>/.exec(await get(url, false))?.[1];
+  if (!release || !SAFE_VERSION_TOKEN.test(release)) throw new Error(`Refusing unexpected Velocity release ${JSON.stringify(release)}`);
+  const full = await get(url.replace("maven-metadata.xml", `${release}/velocity-api-${release}.module`), true);
+  const variants = full.variants.map((variant) => ({ name: variant.name, attributes: variant.attributes }));
+  await writeJson("velocity-api-module.json", { formatVersion: full.formatVersion, component: full.component, variants });
+}
+
 async function recordNeoForge() {
   const [url, file] = SOURCES.neoForge;
   const neo = await get(url, true);
@@ -168,6 +179,7 @@ async function main() {
     all.filter((v) => /^26\./.test(v) || /^1\.21\.11/.test(v) || v === "1.21.1-R0.1-SNAPSHOT" || v === "1.20.4-R0.1-SNAPSHOT"),
   );
   await recordMaven("velocityApiMeta", (all) => lastOf(all, 20));
+  await recordVelocityModule();
   await recordMaven("loomMeta", (all) => lastOf(all, 25));
   await recordMaven("fabricApiMeta", pickFabricApi);
 

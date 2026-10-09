@@ -1,0 +1,10 @@
+{
+  "id": "{{input.pluginId}}",
+  "name": "{{input.name}}",
+  "version": "@version@",
+  "description": "{{input.description|json}}",
+  "authors": [
+    "{{input.author|json}}"
+  ],
+  "main": "{{input.package}}.{{input.name}}"
+}
