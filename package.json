@@ -1,6 +1,6 @@
 {
   "name": "emd-minecraft",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Everything Minecraft Development: live version data, proven presets and AI skills for building Minecraft plugins, mods and packs.",
   "type": "module",
   "bin": {
