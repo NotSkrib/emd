@@ -85,6 +85,16 @@ describe("runCli", () => {
     expect(result.out).toContain("--refresh");
   });
 
+  it("accepts --mc latest for versions, and says so when a bad value is given", async () => {
+    const latest = await run(["versions", "--mc", "latest", "--json"]);
+    const bad = await run(["versions", "--mc", "newest"]);
+
+    expect(latest.code).toBe(0);
+    expect((JSON.parse(latest.out) as { mcVersion: string }).mcVersion).toBe(LATEST);
+    expect(bad.code).toBe(2);
+    expect(bad.err).toContain("or latest");
+  });
+
   it("treats an empty --mc as a usage error instead of falling back to the overview", async () => {
     const result = await run(["versions", "--mc", ""]);
 

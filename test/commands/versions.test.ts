@@ -67,6 +67,12 @@ describe("runVersions", () => {
     expect(parsed.packFormats?.resource.major).toBeGreaterThan(0);
   });
 
+  it("resolves --mc latest to the newest release and reports that version", async () => {
+    const parsed = JSON.parse(await runVersions({ mc: "latest", json: true }, fixtureHttp())) as TargetJson;
+
+    expect(parsed.mcVersion).toBe(LATEST);
+  });
+
   it("says when Java was assumed", async () => {
     const manifest = parseMojangManifest(fixtureJson("mojang-manifest.json"));
     const url = manifest.releases.find((release) => release.id === "1.12.2")?.versionUrl ?? "";

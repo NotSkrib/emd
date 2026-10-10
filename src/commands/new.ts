@@ -6,7 +6,7 @@ import { loadPresetById } from "../presets/load.js";
 import { planFiles } from "../presets/plan.js";
 import type { AnswerValue, PlannedFile, PresetManifest } from "../presets/types.js";
 import { writeProject } from "../presets/write.js";
-import { compareDotted } from "../versions/compare.js";
+import { compareDotted, LATEST_MINECRAFT } from "../versions/compare.js";
 import type { HttpClient } from "../versions/http.js";
 import {
   fetchJavaRequirement,
@@ -16,9 +16,6 @@ import {
   withVelocityJava,
   type TargetInfo,
 } from "../versions/resolver.js";
-
-/** What `--mc` can say instead of a version: the newest release. */
-export const LATEST_MINECRAFT = "latest";
 
 export interface NewArgs {
   preset: string;

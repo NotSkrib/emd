@@ -39,6 +39,9 @@ export function isYearVersion(mcVersion: string): boolean {
   return Number.isInteger(major) && major >= FIRST_YEAR_VERSION;
 }
 
+/** What `--mc` can say instead of a version: the newest release. Only the commands that accept it resolve it. */
+export const LATEST_MINECRAFT = "latest";
+
 /** True for release ids such as "26.3" and "1.21.11", false for pre-releases and snapshots. */
 export function isStableMcVersion(id: string): boolean {
   return /^\d+(\.\d+){1,2}$/.test(id);

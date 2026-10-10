@@ -1,11 +1,11 @@
 import { parseArgs } from "node:util";
 import { runInstall, runStatus, runUninstall } from "../commands/install.js";
-import { LATEST_MINECRAFT, runNew } from "../commands/new.js";
+import { runNew } from "../commands/new.js";
 import { runPreset } from "../commands/preset.js";
 import { runVersions } from "../commands/versions.js";
 import { EmdError } from "../errors.js";
 import { parseToolList, TOOL_IDS, type Scope } from "../install/tools.js";
-import { isStableMcVersion } from "../versions/compare.js";
+import { isStableMcVersion, LATEST_MINECRAFT } from "../versions/compare.js";
 import type { HttpClient } from "../versions/http.js";
 import { stripControlCharacters } from "../util/text.js";
 
@@ -168,7 +168,7 @@ async function versionsCommand(args: readonly string[], env: CliEnvironment, out
     output.print(VERSIONS_HELP);
     return EXIT_OK;
   }
-  const mc = values.mc === undefined ? undefined : requireMinecraft(values.mc);
+  const mc = values.mc === undefined ? undefined : requireMinecraft(values.mc, { allowLatest: true });
   const http = env.createHttp({ refresh: values.refresh === true });
   output.print(await runVersions({ ...(mc === undefined ? {} : { mc }), json: values.json === true }, http));
   return EXIT_OK;

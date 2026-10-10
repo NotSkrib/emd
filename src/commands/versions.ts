@@ -1,3 +1,4 @@
+import { LATEST_MINECRAFT } from "../versions/compare.js";
 import type { HttpClient } from "../versions/http.js";
 import {
   buildMatrix,
@@ -22,8 +23,9 @@ export async function runVersions(args: VersionsArgs, http: HttpClient): Promise
     return args.json ? toJson({ ...matrix, warnings }) : formatMatrix(matrix, warnings);
   }
 
-  const java = await fetchJavaRequirement(http, data.manifest, args.mc);
-  const target = resolveTarget(data, args.mc, java);
+  const mcVersion = args.mc === LATEST_MINECRAFT ? data.manifest.latestRelease : args.mc;
+  const java = await fetchJavaRequirement(http, data.manifest, mcVersion);
+  const target = resolveTarget(data, mcVersion, java);
   const combined: TargetInfo = { ...target, warnings: [...warnings, ...target.warnings] };
   return args.json ? toJson(combined) : formatTarget(combined);
 }
