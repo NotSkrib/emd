@@ -35,8 +35,18 @@ function codeSnippets(text: string): string[] {
 
 describe("shipped skills and agents", () => {
   it("ship the expected set", () => {
-    expect(content.skills.map((skill) => skill.name)).toEqual(["emd-build-troubleshooting", "emd-minecraft-dev", "emd-packs", "emd-version-facts"]);
-    expect(content.agents.map((agent) => agent.name)).toEqual(["emd-builder", "emd-reviewer"]);
+    expect(content.skills.map((skill) => skill.name)).toEqual([
+      "emd-build-troubleshooting",
+      "emd-folia-threading",
+      "emd-local-testing",
+      "emd-minecraft-dev",
+      "emd-packs",
+      "emd-preset-guide",
+      "emd-release-checklist",
+      "emd-upgrade-minecraft",
+      "emd-version-facts",
+    ]);
+    expect(content.agents.map((agent) => agent.name)).toEqual(["emd-builder", "emd-doctor", "emd-planner", "emd-reviewer", "emd-upgrader"]);
   });
 
   it("tell the model when to use each skill", () => {

@@ -46,4 +46,9 @@ Run `emd versions --mc <version>` (add `--json` for scripts). It prints the Java
 - `emd-version-facts`: what changed recently and what models usually get wrong.
 - `emd-packs`: `pack.mcmeta`, folder names and functions for data packs and resource packs.
 - `emd-build-troubleshooting`: Gradle and toolchain errors, with their causes.
+- `emd-preset-guide`: what each preset makes, where its descriptor and run tasks are, and its rules.
+- `emd-upgrade-minecraft`: moving an existing project to a newer Minecraft version.
+- `emd-folia-threading`: the four Folia schedulers and what `folia-supported` really promises.
+- `emd-local-testing`: starting the test server, proxy or client, and reporting the run honestly.
+- `emd-release-checklist`: what to check in the jar or pack before it is shared.
 - If the antislop skills are installed, follow them for README text and other prose you write.

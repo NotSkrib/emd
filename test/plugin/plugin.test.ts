@@ -47,7 +47,7 @@ describe("the Claude Code plugin", () => {
   });
 
   it("offers the slash commands the README promises", () => {
-    expect(commands.map((command) => command.name)).toEqual(["fix-build", "new", "plan", "review", "versions"]);
+    expect(commands.map((command) => command.name)).toEqual(["doctor", "fix-build", "new", "plan", "presets", "release", "review", "test", "upgrade", "versions"]);
   });
 
   it.each(commands.map((command) => [command.name, command] as const))("/emd:%s has a description, an argument hint and uses what the user typed", (_name, command) => {

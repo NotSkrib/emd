@@ -86,7 +86,15 @@ The tools are `claude`, `opencode`, `copilot` (VS Code), `codex`, `cursor`, `gem
 | `emd-version-facts` | What changed recently and what models usually get wrong about it. |
 | `emd-packs` | `pack.mcmeta`, folder names and functions for data packs and resource packs. |
 | `emd-build-troubleshooting` | Gradle and toolchain errors, with their causes. |
+| `emd-preset-guide` | What each preset makes, where its descriptor and run tasks are, and its rules. |
+| `emd-upgrade-minecraft` | Moving a project to a newer Minecraft version, and where the formats changed. |
+| `emd-folia-threading` | The four Folia schedulers and what `folia-supported` promises. |
+| `emd-local-testing` | Starting the test server, proxy or client, and reporting the run honestly. |
+| `emd-release-checklist` | What to check in the jar or pack before it is shared. |
 | `emd-builder` (agent) | Creates a project end to end and builds it. |
+| `emd-planner` (agent, read-only) | Plans a project (preset, live versions, inputs, risks) and writes nothing. |
+| `emd-upgrader` (agent) | Upgrades a project by comparing it with a fresh one, then rebuilds. |
+| `emd-doctor` (agent, read-only) | Checks that Java, Gradle and Node fit the project. |
 | `emd-reviewer` (agent, read-only) | Reviews changes for stale versions and metadata. |
 
 EMD only changes files that carry its marker and names that start with `emd-`. It stops without writing anything if it would overwrite something else. How each tool's folders were found is in [docs/AI-TOOLS.md](docs/AI-TOOLS.md).
@@ -107,6 +115,11 @@ EMD is also a Claude Code plugin, which gives you `/emd:` commands. Inside Claud
 | `/emd:versions [version]` | Shows live Minecraft, Java and platform versions. |
 | `/emd:review` | Reviews your changes for stale versions and bad pack metadata. Read-only. |
 | `/emd:fix-build` | Diagnoses a failing Gradle build, one change at a time. |
+| `/emd:upgrade [version]` | Upgrades a project to a newer Minecraft version by comparing it with a fresh one. |
+| `/emd:doctor` | Checks that the Java, Gradle and Node on this machine fit the project. Read-only. |
+| `/emd:release` | Runs the release checklist on a jar or pack folder. Uploads nothing. |
+| `/emd:presets [what you want]` | Explains the presets and recommends one. |
+| `/emd:test [task]` | Runs the project's test server, proxy or client and reports what happened. |
 
 The plugin also loads the skills and agents, so you do not need `emd install` for Claude Code. The commands run `emd` (as `npx emd-minecraft` when it is not installed), so Node 22 or newer is required. The plugin passes Claude Code's own `claude plugin validate`, but has not been run in a real session yet. Slash commands for the other tools are not built yet. They get the skills and agents through `emd install`.
 
