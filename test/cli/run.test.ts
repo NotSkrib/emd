@@ -1,7 +1,8 @@
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCli, type CliEnvironment } from "../../src/cli/run.js";
 import { EmdError } from "../../src/errors.js";
 import type { HttpClient } from "../../src/versions/http.js";
@@ -9,7 +10,8 @@ import { parseMojangManifest } from "../../src/versions/mojang.js";
 import { fixtureHttp, fixtureJson } from "../helpers/fixtures.js";
 
 const LATEST = parseMojangManifest(fixtureJson("mojang-manifest.json")).latestRelease;
-const PRESETS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "presets");
+const REPO_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const PRESETS_DIR = path.join(REPO_ROOT, "presets");
 
 interface Result {
   code: number;
@@ -30,6 +32,8 @@ async function run(argv: string[], overrides: Partial<CliEnvironment> = {}): Pro
     },
     createHttp: () => fixtureHttp(),
     presetsDir: PRESETS_DIR,
+    contentDir: REPO_ROOT,
+    home: os.tmpdir(),
     cwd: os.tmpdir(),
     ...overrides,
   };
@@ -255,5 +259,91 @@ describe("runCli new", () => {
 
     expect(result.code).toBe(1);
     expect(result.err).toContain('"name"');
+  });
+});
+
+describe("runCli install, uninstall and status", () => {
+  let base: string;
+  let overrides: Partial<CliEnvironment>;
+
+  beforeEach(async () => {
+    base = await mkdtemp(path.join(os.tmpdir(), "emd-cli-install-"));
+    overrides = { contentDir: path.join(base, "content"), cwd: path.join(base, "project"), home: path.join(base, "home") };
+    await mkdir(path.join(base, "project"), { recursive: true });
+    await mkdir(path.join(base, "content", "skills", "emd-one"), { recursive: true });
+    await writeFile(path.join(base, "content", "skills", "emd-one", "SKILL.md"), '---\nname: emd-one\ndescription: "One."\n---\nBody\n');
+  });
+
+  afterEach(async () => {
+    await rm(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  });
+
+  it("requires --tool for install and lists the choices", async () => {
+    const result = await run(["install"], overrides);
+
+    expect(result.code).toBe(2);
+    expect(result.err).toContain("--tool is required");
+    expect(result.err).toContain("claude");
+    expect(result.err).toContain("antigravity");
+  });
+
+  it("rejects an unknown tool and an unknown scope", async () => {
+    expect((await run(["install", "--tool", "vim"], overrides)).code).toBe(2);
+    const scope = await run(["install", "--tool", "claude", "--scope", "everywhere"], overrides);
+
+    expect(scope.code).toBe(2);
+    expect(scope.err).toContain("--scope expects project or user");
+  });
+
+  it("installs into the working folder, then reports it unchanged", async () => {
+    const first = await run(["install", "--tool", "claude"], overrides);
+    const again = await run(["install", "--tool", "claude"], overrides);
+
+    expect(first.code).toBe(0);
+    expect(await readFile(path.join(base, "project", ".claude", "skills", "emd-one", "SKILL.md"), "utf8")).toContain("emd-managed 9.9.9");
+    expect(again.out).toContain("unchanged  .claude/skills/emd-one");
+  });
+
+  it("plans without writing on --dry-run and prints JSON on request", async () => {
+    const result = await run(["install", "--tool", "codex", "--dry-run", "--json"], overrides);
+
+    expect(result.code).toBe(0);
+    expect((JSON.parse(result.out) as { dryRun: boolean }).dryRun).toBe(true);
+    expect(await readFile(path.join(base, "project", ".agents", "skills", "emd-one", "SKILL.md")).then(() => true, () => false)).toBe(false);
+  });
+
+  it("uses the home folder for --scope user", async () => {
+    await run(["install", "--tool", "codex", "--scope", "user"], overrides);
+
+    expect(await readFile(path.join(base, "home", ".agents", "skills", "emd-one", "SKILL.md"), "utf8")).toContain("emd-managed");
+  });
+
+  it("reports a conflict as a failure, not a usage error", async () => {
+    await mkdir(path.join(base, "project", ".claude", "skills", "emd-one"), { recursive: true });
+    await writeFile(path.join(base, "project", ".claude", "skills", "emd-one", "SKILL.md"), "mine\n");
+
+    const result = await run(["install", "--tool", "claude"], overrides);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("Nothing was changed");
+  });
+
+  it("reports status and uninstalls without needing --tool", async () => {
+    await run(["install", "--tool", "claude"], overrides);
+
+    const status = await run(["status"], overrides);
+    const removed = await run(["uninstall"], overrides);
+
+    expect(status.out).toContain(".claude/skills/emd-one");
+    expect(removed.out).toContain("Removed");
+    expect(await readFile(path.join(base, "project", ".claude", "skills", "emd-one", "SKILL.md")).then(() => true, () => false)).toBe(false);
+  });
+
+  it("mentions the new commands in the help", async () => {
+    const result = await run(["--help"]);
+
+    expect(result.out).toContain("emd install");
+    expect(result.out).toContain("emd uninstall");
+    expect(result.out).toContain("emd status");
   });
 });

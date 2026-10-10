@@ -1,8 +1,10 @@
 import { parseArgs } from "node:util";
+import { runInstall, runStatus, runUninstall } from "../commands/install.js";
 import { LATEST_MINECRAFT, runNew } from "../commands/new.js";
 import { runPreset } from "../commands/preset.js";
 import { runVersions } from "../commands/versions.js";
 import { EmdError } from "../errors.js";
+import { parseToolList, TOOL_IDS, type Scope } from "../install/tools.js";
 import { isStableMcVersion } from "../versions/compare.js";
 import type { HttpClient } from "../versions/http.js";
 import { stripControlCharacters } from "../util/text.js";
@@ -14,6 +16,9 @@ Usage:
   emd preset list [--json]
   emd preset show <id> [--json]
   emd new --preset <id> [--mc <version>] [--set key=value ...] [--dir <path>] [--dry-run] [--force] [--json]
+  emd install --tool <tools> [--scope project|user] [--dry-run] [--json]
+  emd uninstall [--tool <tools>] [--scope project|user] [--dry-run] [--json]
+  emd status [--tool <tools>] [--scope project|user] [--json]
   emd --version
   emd --help
 `;
@@ -41,6 +46,21 @@ Creates a project from a preset, using live versions for the chosen Minecraft re
   --refresh            Ignore cached version data
 `;
 
+const INSTALL_HELP = `Usage:
+  emd install --tool <tools> [--scope project|user] [--dry-run] [--json]
+  emd uninstall [--tool <tools>] [--scope project|user] [--dry-run] [--json]
+  emd status [--tool <tools>] [--scope project|user] [--json]
+
+Puts EMD's skills and subagents where your AI tools read them, so the tools know how to use emd
+and stop guessing Minecraft versions. Only files with EMD's marker are ever changed or removed.
+
+  --tool <tools>   ${TOOL_IDS.join(", ")}, a comma-separated list of them, or all.
+                   Required for install. uninstall and status default to all.
+  --scope          project (the current folder, default) or user (your home folder)
+  --dry-run        Show what would change without writing anything
+  --json           Print JSON instead of text
+`;
+
 export const EXIT_OK = 0;
 export const EXIT_FAILURE = 1;
 export const EXIT_USAGE = 2;
@@ -55,6 +75,10 @@ export interface CliEnvironment {
   createHttp: (options: { refresh: boolean }) => HttpClient;
   /** Folder holding the shipped presets. */
   presetsDir: string;
+  /** The root of the emd package, which holds the `skills/` and `agents/` folders. */
+  contentDir: string;
+  /** The home folder, where `--scope user` installs. */
+  home: string;
   /** What relative paths are resolved against. */
   cwd: string;
 }
@@ -91,8 +115,41 @@ async function dispatch(argv: readonly string[], env: CliEnvironment, output: Ou
   if (command === "versions") return versionsCommand(rest, env, output);
   if (command === "preset") return presetCommand(rest, env, output);
   if (command === "new") return newCommand(rest, env, output);
+  if (command === "install" || command === "uninstall" || command === "status") return installerCommand(command, rest, env, output);
 
   throw new EmdError("USAGE", `Unknown command: ${JSON.stringify(command)}.`);
+}
+
+async function installerCommand(command: "install" | "uninstall" | "status", args: readonly string[], env: CliEnvironment, output: Output): Promise<number> {
+  const { values } = parseArgs({
+    args: [...args],
+    options: {
+      tool: { type: "string" },
+      scope: { type: "string", default: "project" },
+      "dry-run": { type: "boolean", default: false },
+      json: { type: "boolean", default: false },
+      help: { type: "boolean", short: "h", default: false },
+    },
+    allowPositionals: false,
+  });
+
+  if (values.help === true) {
+    output.print(INSTALL_HELP);
+    return EXIT_OK;
+  }
+  const scope = parseScope(values.scope);
+  if (command === "install" && values.tool === undefined) {
+    throw new EmdError("USAGE", `--tool is required, for example --tool claude. Choose from ${TOOL_IDS.join(", ")}, or all.`);
+  }
+  const tools = parseToolList(values.tool ?? "all");
+  const common = { tools, scope, json: values.json === true };
+  const deps = { contentDir: env.contentDir, cwd: env.cwd, home: env.home, version: env.version };
+  const dryRun = values["dry-run"] === true;
+
+  if (command === "status") output.print(await runStatus(common, deps));
+  else if (command === "uninstall") output.print(await runUninstall({ ...common, dryRun }, deps));
+  else output.print(await runInstall({ ...common, dryRun }, deps));
+  return EXIT_OK;
 }
 
 async function versionsCommand(args: readonly string[], env: CliEnvironment, output: Output): Promise<number> {
@@ -171,6 +228,11 @@ async function newCommand(args: readonly string[], env: CliEnvironment, output: 
   const http = env.createHttp({ refresh: values.refresh === true });
   output.print(await runNew(request, { http, presetsDir: env.presetsDir, cwd: env.cwd }));
   return EXIT_OK;
+}
+
+function parseScope(value: string | undefined): Scope {
+  if (value === "project" || value === "user") return value;
+  throw new EmdError("USAGE", `--scope expects project or user, not ${JSON.stringify(String(value).slice(0, 40))}.`);
 }
 
 function requireMinecraft(value: string, options: { allowLatest?: boolean } = {}): string {

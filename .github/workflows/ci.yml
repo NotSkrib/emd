@@ -31,3 +31,6 @@ jobs:
       - run: npm run build
       - run: node dist/cli.js --version
       - run: node dist/cli.js --help
+      # The built binary, not just the unit tests: it must find the skills and agents it ships.
+      - run: node dist/cli.js install --tool all --dry-run
+      - run: node dist/cli.js status

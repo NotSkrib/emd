@@ -1,6 +1,7 @@
-import { lstat, readdir, readFile } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { EmdError } from "../errors.js";
+import { readRegularText } from "../util/files.js";
 import { parsePresetManifest } from "./schema.js";
 import type { PresetManifest } from "./types.js";
 
@@ -62,13 +63,8 @@ async function listFolders(root: string): Promise<string[]> {
   }
 }
 
-async function readRegularFile(file: string, maxBytes: number, label: string): Promise<string> {
-  const info = await lstat(file).catch((cause: unknown) => {
-    throw new EmdError("BAD_PRESET", `${label} is missing.`, { cause });
-  });
-  if (!info.isFile()) throw new EmdError("BAD_PRESET", `${label} must be a regular file, not a link or a folder.`);
-  if (info.size > maxBytes) throw new EmdError("BAD_PRESET", `${label} is larger than ${maxBytes} bytes.`);
-  return readFile(file, "utf8");
+function readRegularFile(file: string, maxBytes: number, label: string): Promise<string> {
+  return readRegularText(file, maxBytes, label, "BAD_PRESET");
 }
 
 function parseJson(raw: string, name: string): unknown {

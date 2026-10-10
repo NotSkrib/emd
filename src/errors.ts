@@ -6,6 +6,7 @@ export type EmdErrorCode =
   | "TOO_LARGE"
   | "UNKNOWN_MC_VERSION"
   | "BAD_PRESET"
+  | "BAD_CONTENT"
   | "BAD_ANSWER"
   | "BAD_TEMPLATE"
   | "NOT_FOUND"

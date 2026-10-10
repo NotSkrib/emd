@@ -3,10 +3,10 @@
 One toolkit for building Minecraft plugins, mods and packs with an AI agent.
 
 - **Live version data.** Minecraft, Java, Paper, Folia, Velocity, Fabric, NeoForge and Forge versions come from their official APIs, not from a table that goes stale.
-- **Presets proven on real projects.** Planned. Each preset records which open-source project it came from and is rebuilt against the newest release in CI.
-- **Skills and subagents** for Claude Code, OpenCode, VS Code Copilot, Antigravity, Codex, Cursor and Gemini CLI. Planned.
+- **Presets proven on real projects.** Each preset records which open-source project it came from, and a nightly workflow generates every preset and builds it against the newest release.
+- **Skills and subagents** for Claude Code, OpenCode, VS Code Copilot, Antigravity, Codex, Cursor and Gemini CLI. `emd install` puts them where each tool reads them, so the tool uses `emd` instead of guessing versions.
 
-Status: early development. The live version resolver and six presets work: a Paper plugin, a Velocity plugin, a Fabric mod, a NeoForge mod, a data pack and a resource pack. All are unit tested, and the `presets` workflow generates each one against the newest Minecraft release on every change and every night. The four with a build are built with Gradle. The two packs have none, so their `pack.mcmeta` is checked instead. Nothing has booted a server or client yet. Skills and the installer are not built yet, and nothing is published to npm.
+Status: early development. The live version resolver, six presets and the installer work. The presets are a Paper plugin, a Velocity plugin, a Fabric mod, a NeoForge mod, a data pack and a resource pack. All are unit tested, and the `presets` workflow generates each one against the newest Minecraft release on every change and every night. The four with a build are built with Gradle. The two packs have none, so their `pack.mcmeta` is checked instead. Nothing has booted a server or client yet, and the skills have not been tried inside each AI tool. Nothing is published to npm yet.
 
 ## Try it
 
@@ -56,6 +56,32 @@ node dist/cli.js new --preset velocity-plugin \
 Add `--dry-run` to see the files first, or `--json` for output a script or an AI agent can read. It never overwrites existing files unless you pass `--force`. Free-text answers such as the description are escaped for each file they land in, and every generated project gets its own `AGENTS.md` with the exact build and run commands.
 
 Data for Minecraft versions older than 1.20.5 is incomplete, because platforms publish those under older artifact names. `emd versions` says so when you ask for one.
+
+## Use it from your AI tool
+
+`emd install` copies EMD's skills and subagents into the folders your AI tools read:
+
+```bash
+node dist/cli.js install --tool claude                # Claude Code, in the current project
+node dist/cli.js install --tool claude,codex,cursor   # several tools at once
+node dist/cli.js install --tool all --scope user      # every tool, for your whole account
+node dist/cli.js install --tool all --dry-run         # show what would change
+node dist/cli.js status                               # what is installed, and whether it is current
+node dist/cli.js uninstall                            # remove what EMD installed
+```
+
+The tools are `claude`, `opencode`, `copilot` (VS Code), `codex`, `cursor`, `gemini` and `antigravity`. Skills go into the fewest folders that cover your choice (`.agents/skills`, which most tools read, plus `.claude/skills` for Claude Code), and subagents are written in each tool's own format. Antigravity gets skills only, and only per project.
+
+| Skill or agent | What it does |
+|---|---|
+| `emd-minecraft-dev` | The workflow: pick a preset, generate with live versions, build, report honestly. |
+| `emd-version-facts` | What changed recently and what models usually get wrong about it. |
+| `emd-packs` | `pack.mcmeta`, folder names and functions for data packs and resource packs. |
+| `emd-build-troubleshooting` | Gradle and toolchain errors, with their causes. |
+| `emd-builder` (agent) | Creates a project end to end and builds it. |
+| `emd-reviewer` (agent, read-only) | Reviews changes for stale versions and metadata. |
+
+EMD only changes files that carry its marker and names that start with `emd-`. It stops without writing anything if it would overwrite something else. How each tool's folders were found is in [docs/AI-TOOLS.md](docs/AI-TOOLS.md).
 
 ## Target platforms
 
