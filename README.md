@@ -144,13 +144,20 @@ EMD refuses to install a command whose text contains syntax that Gemini CLI or O
 | Family | Supported today (a preset exists) | Planned |
 |---|---|---|
 | Plugins | Paper, Folia (a flag in the Paper preset) | Spigot/Bukkit, Purpur |
-| Proxies | Velocity | BungeeCord |
-| Mods | Fabric, NeoForge | Quilt. Forge has a skill but no preset, see below. |
+| Proxies | Velocity | none. BungeeCord is blocked, see below. |
+| Mods | Fabric, NeoForge | none. Forge has a skill but no preset, and Quilt is blocked, see below. |
 | Packs | Data packs, resource packs (1.21.9 and newer) | older versions, Bedrock add-ons |
 
 `emd versions` already reports Forge and Velocity data. Only the platforms in the middle column have presets.
 
 **Why there is no Forge preset.** Presets may copy only from MIT, Apache-2.0, CC0, BSD, ISC, 0BSD and Unlicense projects. Forge's MDK is under the LGPL 2.1, and its examples repository has no license, so neither can be copied. The `emd-forge-basics` skill gives AI tools the build facts instead, taken from a mod written from scratch and built with Gradle. A Forge preset would need either a permissively licensed template or a decision to relax that rule.
+
+**Two more platforms that are blocked, checked 2026-10-10.**
+
+- **Quilt.** Its template is CC0, but it targets Minecraft 1.20.6, and Quilt's standard libraries and Quilted Fabric API on the Quilt Maven stop at 1.21.1. There is nothing to build a 26.x preset on.
+- **BungeeCord.** Its license is a BSD license with an extra clause that bars use for commercial software hosting services. That is not on the permissive list. Its API's newest release on Maven Central is also for 1.21, not 26.x.
+
+Plain Spigot and Bukkit, and Purpur, have not been looked at. The Paper preset builds against Paper's API, so use it only for servers that run Paper.
 
 ## Develop
 
