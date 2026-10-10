@@ -65,6 +65,28 @@ describe("shipped skills and agents", () => {
     expect(everything.units.length).toBeGreaterThan(content.skills.length + content.agents.length);
   });
 
+  it("install every slash command of the Claude Code plugin for Gemini CLI and OpenCode", () => {
+    expect(content.commands.map((command) => command.name)).toEqual(commandFiles.map((file) => file.slice(0, -".md".length)));
+
+    const plan = planInstall(content, { tools: ["gemini", "opencode"], scope: "project", root: ROOT, version: "0.0.0" });
+    const places = plan.units.filter((unit) => unit.kind === "command").map((unit) => path.relative(ROOT, unit.location).split(path.sep).join("/"));
+
+    expect(places).toEqual([
+      ...content.commands.map((command) => `.gemini/commands/emd/${command.name}.toml`),
+      ...content.commands.map((command) => `.opencode/commands/emd-${command.name}.md`),
+    ]);
+  });
+
+  it("refer only to slash commands that exist", () => {
+    const known = new Set(content.commands.map((command) => command.name));
+
+    for (const { label, text } of documents) {
+      for (const match of text.matchAll(/\/emd:([a-z][a-z-]*)/g)) {
+        expect(known.has(match[1] ?? ""), `${label} mentions /emd:${match[1]}, which is not shipped`).toBe(true);
+      }
+    }
+  });
+
   it("refer only to skills and agents that exist", () => {
     const known = new Set([...content.skills.map((skill) => skill.name), ...content.agents.map((agent) => agent.name)]);
 

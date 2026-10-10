@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   allAgentFolders,
+  allCommandFolders,
   allSkillFolders,
   chooseAgentSinks,
+  chooseCommandSinks,
   chooseSkillFolders,
   parseToolList,
   TOOL_IDS,
@@ -122,5 +124,46 @@ describe("chooseAgentSinks", () => {
 
     expect(result.sinks).toEqual([{ format: "claude-md", folder: ".claude/agents" }]);
     expect(result.unsupported).toEqual([{ tool: "antigravity", reason: expect.stringMatching(/subagent/i) }]);
+  });
+});
+
+describe("chooseCommandSinks", () => {
+  it("gives Gemini CLI a TOML folder and OpenCode its own Markdown folder", () => {
+    expect(chooseCommandSinks(["gemini", "opencode"], "project").sinks).toEqual([
+      { format: "gemini-toml", folder: ".gemini/commands" },
+      { format: "opencode-md", folder: ".opencode/commands" },
+    ]);
+  });
+
+  it("puts OpenCode's user-level commands in its own config folder", () => {
+    expect(chooseCommandSinks(["opencode", "gemini"], "user").sinks).toEqual([
+      { format: "opencode-md", folder: ".config/opencode/commands" },
+      { format: "gemini-toml", folder: ".gemini/commands" },
+    ]);
+  });
+
+  it("says where the other tools get their commands instead of dropping them silently", () => {
+    const reasons = Object.fromEntries(chooseCommandSinks(["claude", "copilot", "cursor", "codex", "antigravity"], "project").unsupported.map((entry) => [entry.tool, entry.reason]));
+
+    expect(reasons.claude).toMatch(/plugin install emd@emd/);
+    expect(reasons.copilot).toMatch(/skill/i);
+    expect(reasons.cursor).toMatch(/skill/i);
+    expect(reasons.codex).toMatch(/\$/);
+    expect(reasons.antigravity).toMatch(/no custom command files/i);
+  });
+
+  it("writes no command file for the tools that run skills as commands", () => {
+    expect(chooseCommandSinks(["claude", "copilot", "cursor", "codex", "antigravity"], "project").sinks).toEqual([]);
+  });
+});
+
+describe("allCommandFolders", () => {
+  it("lists every folder the selected tools read commands from, without repeats", () => {
+    expect(allCommandFolders(["gemini", "opencode", "claude"], "project")).toEqual([".gemini/commands", ".opencode/commands"]);
+    expect(allCommandFolders(["opencode"], "user")).toEqual([".config/opencode/commands"]);
+  });
+
+  it("lists nothing for a tool without command files", () => {
+    expect(allCommandFolders(["codex", "cursor"], "project")).toEqual([]);
   });
 });

@@ -29,10 +29,14 @@ const content = (extraFile = false): Content => ({
     },
   ],
   agents: [{ name: "emd-agent", description: "An agent.", readonly: false, body: "Do it.\n" }],
+  commands: [],
 });
 
 const plan = (version = "1.0.0", extraFile = false): InstallPlan =>
   planInstall(content(extraFile), { tools: ["claude", "codex"], scope: "project", root, version });
+
+const withCommand = (): Content => ({ ...content(), commands: [{ name: "new", description: "Makes one.", argumentHint: "[what]", body: "Make it: $ARGUMENTS\n" }] });
+const commandPlan = (version = "1.0.0"): InstallPlan => planInstall(withCommand(), { tools: ["gemini", "opencode"], scope: "project", root, version });
 
 const at = (...parts: string[]): string => path.join(root, ...parts);
 const read = (...parts: string[]): Promise<string> => readFile(at(...parts), "utf8");
@@ -127,6 +131,87 @@ describe("installPlan", () => {
     } finally {
       await unlink(link);
     }
+  });
+});
+
+describe("installPlan commands", () => {
+  it("creates the command files, and the emd namespace folder Gemini CLI needs", async () => {
+    const outcomes = await installPlan(commandPlan(), { dryRun: false });
+
+    expect(outcomes.filter((outcome) => outcome.unit.kind === "command").map((outcome) => outcome.action)).toEqual(["create", "create"]);
+    expect(await read(".gemini", "commands", "emd", "new.toml")).toContain("Make it: {{args}}");
+    expect(await read(".opencode", "commands", "emd-new.md")).toContain("Make it: $ARGUMENTS");
+  });
+
+  it("updates a command it installed earlier and reports an unchanged one", async () => {
+    await installPlan(commandPlan("1.0.0"), { dryRun: false });
+    expect((await installPlan(commandPlan("1.0.0"), { dryRun: false })).filter((outcome) => outcome.unit.kind === "command").map((outcome) => outcome.action)).toEqual(["unchanged", "unchanged"]);
+
+    await installPlan(commandPlan("2.0.0"), { dryRun: false });
+
+    expect(await read(".gemini", "commands", "emd", "new.toml")).toContain("emd-managed 2.0.0");
+  });
+
+  it("refuses a command file it did not write, and writes nothing at all", async () => {
+    await put(".gemini/commands/emd/new.toml", 'prompt = "mine"\n');
+
+    await expect(installPlan(commandPlan(), { dryRun: false })).rejects.toThrow(/not installed by EMD/);
+    expect(await read(".gemini", "commands", "emd", "new.toml")).toBe('prompt = "mine"\n');
+    expect(await exists(".opencode", "commands", "emd-new.md")).toBe(false);
+  });
+
+  it("refuses to write through a linked emd namespace folder", async (context) => {
+    await mkdir(at("elsewhere"), { recursive: true });
+    await mkdir(at(".gemini", "commands"), { recursive: true });
+    const link = at(".gemini", "commands", "emd");
+    try {
+      await symlink(at("elsewhere"), link, "dir");
+    } catch {
+      context.skip(); // Creating links needs extra privileges on some systems.
+    }
+
+    try {
+      await expect(installPlan(commandPlan(), { dryRun: false })).rejects.toThrow(/link/);
+      expect(await readdir(at("elsewhere"))).toEqual([]);
+    } finally {
+      await unlink(link);
+    }
+  });
+});
+
+describe("findManaged and removeManaged commands", () => {
+  it("finds commands in the namespace folder and in the flat layout, and ignores files without the marker", async () => {
+    await installPlan(commandPlan("1.2.3"), { dryRun: false });
+    await put(".gemini/commands/emd/own.toml", 'prompt = "mine"\n');
+    await put(".gemini/commands/mine.toml", 'prompt = "mine"\n');
+    await put(".opencode/commands/emd-fake.md", "no marker\n");
+
+    const found = await findManaged(root, "project", ["gemini", "opencode"]);
+
+    expect(found.filter((item) => item.kind === "command").map((item) => [item.name, item.version]).sort()).toEqual([
+      ["emd-new", "1.2.3"],
+      ["emd:new", "1.2.3"],
+    ]);
+  });
+
+  it("removes the commands and the namespace folder once it is empty", async () => {
+    await installPlan(commandPlan(), { dryRun: false });
+
+    await removeManaged(await findManaged(root, "project", ["gemini", "opencode"]));
+
+    expect(await exists(".gemini", "commands", "emd", "new.toml")).toBe(false);
+    expect(await exists(".opencode", "commands", "emd-new.md")).toBe(false);
+    expect(await readdir(at(".gemini", "commands"))).toEqual([]);
+  });
+
+  it("keeps a namespace folder that still holds a file of the user's", async () => {
+    await installPlan(commandPlan(), { dryRun: false });
+    await put(".gemini/commands/emd/own.toml", 'prompt = "mine"\n');
+
+    await removeManaged(await findManaged(root, "project", ["gemini"]));
+
+    expect(await exists(".gemini", "commands", "emd", "new.toml")).toBe(false);
+    expect(await read(".gemini", "commands", "emd", "own.toml")).toBe('prompt = "mine"\n');
   });
 });
 

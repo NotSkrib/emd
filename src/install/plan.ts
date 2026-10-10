@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { Content } from "./content.js";
-import { emitAgent, emitSkillFiles } from "./emit.js";
-import { chooseAgentSinks, chooseSkillFolders, toolLabel, type Scope, type ToolId } from "./tools.js";
+import { emitAgent, emitCommand, emitSkillFiles } from "./emit.js";
+import { chooseAgentSinks, chooseCommandSinks, chooseSkillFolders, toolLabel, type Scope, type ToolId } from "./tools.js";
 
 export interface InstallOptions {
   tools: readonly ToolId[];
@@ -18,11 +18,11 @@ export interface PlannedFile {
   content: string;
 }
 
-/** One thing installed: a whole skill folder, or a single agent file. */
+/** One thing installed: a whole skill folder, or a single agent or command file. */
 export interface Unit {
-  kind: "skill" | "agent";
+  kind: "skill" | "agent" | "command";
   name: string;
-  /** The skill's folder, or the agent's file. */
+  /** The skill's folder, or the agent's or command's file. */
   location: string;
   files: PlannedFile[];
 }
@@ -43,6 +43,7 @@ export function planInstall(content: Content, options: InstallOptions): InstallP
   const { tools, scope, root, version } = options;
   const skillFolders = chooseSkillFolders(tools, scope);
   const agentSinks = chooseAgentSinks(tools, scope);
+  const commandSinks = chooseCommandSinks(tools, scope);
   const absolute = (relative: string): string => path.join(root, ...relative.split("/"));
 
   const skillUnits = skillFolders.folders.flatMap((folder) =>
@@ -60,6 +61,14 @@ export function planInstall(content: Content, options: InstallOptions): InstallP
     }),
   );
 
+  const commandUnits = commandSinks.sinks.flatMap((sink) =>
+    content.commands.map((command): Unit => {
+      const emitted = emitCommand(command, sink.format, version);
+      const location = path.join(absolute(sink.folder), ...emitted.relativePath.split("/"));
+      return { kind: "command", name: command.name, location, files: [{ path: location, content: emitted.content }] };
+    }),
+  );
+
   const serves = new Map([...skillFolders.serves].map(([folder, served]) => [absolute(folder), served]));
   const duplicates =
     skillFolders.readsSeveral.length === 0
@@ -68,7 +77,9 @@ export function planInstall(content: Content, options: InstallOptions): InstallP
   const notes = [
     ...skillFolders.unsupported.map(({ tool, reason }) => `${toolLabel(tool)}: ${reason}`),
     ...agentSinks.unsupported.map(({ tool, reason }) => `${toolLabel(tool)}: ${reason}`),
+    // Say where the commands are only when there are some, so a plain skills install stays quiet.
+    ...(content.commands.length === 0 ? [] : commandSinks.unsupported.map(({ tool, reason }) => `${toolLabel(tool)}: ${reason}`)),
     ...duplicates,
   ];
-  return { scope, root, tools, units: [...skillUnits, ...agentUnits], serves, notes };
+  return { scope, root, tools, units: [...skillUnits, ...agentUnits, ...commandUnits], serves, notes };
 }

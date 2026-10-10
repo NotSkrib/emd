@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Agent, Skill } from "../../src/install/content.js";
-import { emitAgent, emitSkillFiles, managedVersion } from "../../src/install/emit.js";
+import type { Agent, Command, Skill } from "../../src/install/content.js";
+import { emitAgent, emitCommand, emitSkillFiles, managedVersion } from "../../src/install/emit.js";
 import { parseFrontmatter } from "../../src/install/frontmatter.js";
 import { errorCodeOf } from "../helpers/fixtures.js";
 
@@ -85,6 +85,70 @@ describe("emitAgent codex-toml", () => {
   });
 });
 
+const command = (overrides: Partial<Command> = {}): Command => ({
+  name: "new",
+  description: 'Creates a "Minecraft" project.',
+  argumentHint: "[what to build]",
+  body: "Build this: $ARGUMENTS\n\nThen use /emd:plan and /emd:review.\n",
+  ...overrides,
+});
+
+describe("emitCommand gemini-toml", () => {
+  it("puts the command in the emd namespace folder, so Gemini CLI calls it /emd:new", () => {
+    const { relativePath, content } = emitCommand(command(), "gemini-toml", VERSION);
+
+    expect(relativePath).toBe("emd/new.toml");
+    expect(content).toBe(
+      "description = \"Creates a \\\"Minecraft\\\" project.\"\nprompt = '''\nBuild this: {{args}}\n\nThen use /emd:plan and /emd:review.\n'''\n\n# emd-managed 1.2.3\n",
+    );
+  });
+
+  it("replaces every $ARGUMENTS with Gemini's {{args}}", () => {
+    const { content } = emitCommand(command({ body: "$ARGUMENTS and again $ARGUMENTS\n" }), "gemini-toml", VERSION);
+
+    expect(content).toContain("{{args}} and again {{args}}");
+    expect(content).not.toContain("$ARGUMENTS");
+  });
+
+  it.each([
+    ["a literal string terminator", "bad ''' here $ARGUMENTS\n"],
+    ["a control character", "bad \u0007 bell $ARGUMENTS\n"],
+    ["a shell injection", "run !{rm -rf x} $ARGUMENTS\n"],
+    ["a file injection", "read @{secrets.txt} $ARGUMENTS\n"],
+    ["a placeholder of its own", "hello {{args}} $ARGUMENTS\n"],
+  ])("refuses a body with %s, because Gemini CLI would act on it", (_label, body) => {
+    expect(errorCodeOf(() => emitCommand(command({ body }), "gemini-toml", VERSION))).toBe("BAD_CONTENT");
+  });
+});
+
+describe("emitCommand opencode-md", () => {
+  it("names the file after the command with the emd- prefix, because OpenCode names a command after its file", () => {
+    const { relativePath, content } = emitCommand(command(), "opencode-md", VERSION);
+
+    expect(relativePath).toBe("emd-new.md");
+    expect(content).toBe(
+      '---\ndescription: "Creates a \\"Minecraft\\" project."\n---\nBuild this: $ARGUMENTS\n\nThen use /emd-plan and /emd-review.\n\n<!-- emd-managed 1.2.3 -->\n',
+    );
+  });
+
+  it("writes no header key but the description, because OpenCode may pass unknown ones to the model", () => {
+    const { fields } = parseFrontmatter(emitCommand(command(), "opencode-md", VERSION).content);
+
+    expect(Object.keys(fields)).toEqual(["description"]);
+  });
+
+  it.each([
+    ["a shell injection", "run !`rm -rf x` $ARGUMENTS\n"],
+    ["a file reference", "read @src/secret.txt $ARGUMENTS\n"],
+  ])("refuses a body with %s, because OpenCode would act on it", (_label, body) => {
+    expect(errorCodeOf(() => emitCommand(command({ body }), "opencode-md", VERSION))).toBe("BAD_CONTENT");
+  });
+
+  it("accepts an at sign inside a word, such as an address", () => {
+    expect(() => emitCommand(command({ body: "mail me@example.com $ARGUMENTS\n" }), "opencode-md", VERSION)).not.toThrow();
+  });
+});
+
 describe("emitSkillFiles", () => {
   const skill: Skill = {
     name: "emd-test",
@@ -127,5 +191,7 @@ describe("managedVersion", () => {
   it("recognises what the emitters write", () => {
     expect(managedVersion(emitAgent(agent(), "claude-md", VERSION).content)).toBe(VERSION);
     expect(managedVersion(emitAgent(agent(), "codex-toml", VERSION).content)).toBe(VERSION);
+    expect(managedVersion(emitCommand(command(), "gemini-toml", VERSION).content)).toBe(VERSION);
+    expect(managedVersion(emitCommand(command(), "opencode-md", VERSION).content)).toBe(VERSION);
   });
 });

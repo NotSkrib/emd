@@ -15,6 +15,7 @@ beforeEach(async () => {
   await mkdir(deps.home, { recursive: true });
   await put(deps.contentDir, "skills/emd-one/SKILL.md", '---\nname: emd-one\ndescription: "One."\n---\nBody\n');
   await put(deps.contentDir, "agents/emd-agent.md", '---\nname: emd-agent\ndescription: "An agent."\n---\nDo it.\n');
+  await put(deps.contentDir, "commands/new.md", '---\ndescription: "Makes one."\nargument-hint: "[what]"\n---\nMake it: $ARGUMENTS\n');
 });
 
 afterEach(async () => {
@@ -47,6 +48,16 @@ describe("runInstall", () => {
     expect(output).toContain("create  .claude/skills/emd-one");
     expect(output).toContain("create  .codex/agents/emd-agent.toml");
     expect(output).toContain("Claude Code");
+  });
+
+  it("installs slash commands for the tools that have command files, and says where the others get theirs", async () => {
+    const output = await runInstall(args({ tools: ["gemini", "opencode", "claude"] }), deps);
+
+    expect(await exists(deps.cwd, ".gemini", "commands", "emd", "new.toml")).toBe(true);
+    expect(await exists(deps.cwd, ".opencode", "commands", "emd-new.md")).toBe(true);
+    expect(output).toContain("create  .gemini/commands/emd/new.toml");
+    expect(output).toContain("create  .opencode/commands/emd-new.md");
+    expect(output).toMatch(/Claude Code.*plugin install emd@emd/);
   });
 
   it("installs into the home folder in user scope", async () => {
@@ -124,6 +135,15 @@ describe("runUninstall", () => {
     expect(await exists(deps.cwd, ".claude", "skills", "mine", "SKILL.md")).toBe(true);
   });
 
+  it("removes the slash commands too, and the emd folder it created", async () => {
+    await runInstall(args({ tools: ["gemini", "opencode"] }), deps);
+
+    await runUninstall({ tools: ["gemini", "opencode"], scope: "project", dryRun: false, json: false }, deps);
+
+    expect(await exists(deps.cwd, ".gemini", "commands", "emd", "new.toml")).toBe(false);
+    expect(await exists(deps.cwd, ".opencode", "commands", "emd-new.md")).toBe(false);
+  });
+
   it("lists what it would remove on a dry run", async () => {
     await runInstall(args(), deps);
 
@@ -157,6 +177,16 @@ describe("runStatus", () => {
     expect(output).toContain("0.9.0");
     expect(output).toContain("older");
     expect(output).toContain("emd install");
+  });
+
+  it("lists installed commands with their kind", async () => {
+    await runInstall(args({ tools: ["gemini"] }), deps);
+
+    const parsed = JSON.parse(await runStatus({ tools: ["gemini"], scope: "project", json: true }, deps)) as {
+      items: Array<{ kind: string; name: string; location: string }>;
+    };
+
+    expect(parsed.items).toContainEqual(expect.objectContaining({ kind: "command", name: "emd:new", location: ".gemini/commands/emd/new.toml" }));
   });
 
   it("says so when nothing is installed", async () => {

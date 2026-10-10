@@ -67,7 +67,7 @@ Data for Minecraft versions older than 1.20.5 is incomplete, because platforms p
 
 ## Use it from your AI tool
 
-`emd install` copies EMD's skills and subagents into the folders your AI tools read:
+`emd install` copies EMD's skills, subagents and slash commands into the folders your AI tools read:
 
 ```bash
 emd install --tool claude                # Claude Code, in the current project
@@ -121,7 +121,22 @@ EMD is also a Claude Code plugin, which gives you `/emd:` commands. Inside Claud
 | `/emd:presets [what you want]` | Explains the presets and recommends one. |
 | `/emd:test [task]` | Runs the project's test server, proxy or client and reports what happened. |
 
-The plugin also loads the skills and agents, so you do not need `emd install` for Claude Code. The commands run `emd` (as `npx emd-minecraft` when it is not installed), so Node 22 or newer is required. The plugin passes Claude Code's own `claude plugin validate`, but has not been run in a real session yet. Slash commands for the other tools are not built yet. They get the skills and agents through `emd install`.
+The plugin also loads the skills and agents, so you do not need `emd install` for Claude Code. The commands run `emd` (as `npx emd-minecraft` when it is not installed), so Node 22 or newer is required. The plugin passes Claude Code's own `claude plugin validate`, but has not been run in a real session yet.
+
+### Slash commands in other tools
+
+The same ten commands, in each tool's own way. `emd install` writes the command files for the tools that have them:
+
+| Tool | How you run `new` | Where it comes from |
+|---|---|---|
+| Claude Code | `/emd:new` | The plugin above |
+| Gemini CLI | `/emd:new` | `emd install --tool gemini` writes `.gemini/commands/emd/*.toml` |
+| OpenCode | `/emd-new` | `emd install --tool opencode` writes `.opencode/commands/emd-*.md` |
+| VS Code Copilot, Cursor | type `/` and pick an EMD skill | The skills. Both tools list skills as slash commands, so EMD adds no command files. |
+| Codex | mention a skill with `$`, or open `/skills` | The skills. |
+| Antigravity | none documented | It gets the skills only. |
+
+EMD refuses to install a command whose text contains syntax that Gemini CLI or OpenCode would execute, such as `!{...}` or a backticked shell command after `!`. These commands are the plugin's files, converted for each tool. They have been parsed and installed in tests, but not run in a real Gemini CLI or OpenCode session yet.
 
 ## Platforms
 

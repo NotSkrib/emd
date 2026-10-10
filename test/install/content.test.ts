@@ -45,7 +45,7 @@ describe("loadContent", () => {
   });
 
   it("returns nothing when the folders are absent", async () => {
-    expect(await loadContent(root)).toEqual({ skills: [], agents: [] });
+    expect(await loadContent(root)).toEqual({ skills: [], agents: [], commands: [] });
   });
 
   it.each([
@@ -162,5 +162,57 @@ describe("loadContent", () => {
     await put("agents/emd-a.md", agentMd("emd-a"));
 
     expect((await loadContent(root)).agents.map((agent) => agent.name)).toEqual(["emd-a"]);
+  });
+});
+
+const commandMd = (extra = "", body = "Do the thing: $ARGUMENTS\n"): string =>
+  `---\ndescription: "Does the thing."\n${extra}---\n${body}`;
+
+describe("loadContent commands", () => {
+  it("loads commands by their file name, sorted, with the hint and the body", async () => {
+    await put("commands/new.md", commandMd('argument-hint: "[what to build]"\n'));
+    await put("commands/fix-build.md", commandMd());
+
+    const { commands } = await loadContent(root);
+
+    expect(commands.map((command) => command.name)).toEqual(["fix-build", "new"]);
+    expect(commands[1]).toEqual({ name: "new", description: "Does the thing.", argumentHint: "[what to build]", body: "Do the thing: $ARGUMENTS\n" });
+    expect(commands[0]?.argumentHint).toBeUndefined();
+  });
+
+  it("ignores files in the commands folder that are not markdown", async () => {
+    await put("commands/notes.txt", "ignore me");
+    await put("commands/new.md", commandMd());
+
+    expect((await loadContent(root)).commands.map((command) => command.name)).toEqual(["new"]);
+  });
+
+  it.each([
+    ["uppercase", "New"],
+    ["an underscore", "fix_build"],
+    ["a double hyphen", "fix--build"],
+    ["a leading hyphen", "-new"],
+    ["more than 32 characters", "a".repeat(33)],
+  ])("rejects a command file with %s in its name", async (_label, name) => {
+    await put(`commands/${name}.md`, commandMd());
+
+    expect(await errorCodeOfAsync(() => loadContent(root))).toBe("BAD_CONTENT");
+  });
+
+  it("rejects a command that never uses what the user typed", async () => {
+    await put("commands/new.md", commandMd("", "Do the thing.\n"));
+
+    await expect(loadContent(root)).rejects.toThrow(/\$ARGUMENTS/);
+  });
+
+  it("rejects an unknown header field, an empty description and a non-text hint", async () => {
+    await put("commands/a.md", commandMd("allowed-tools: Bash\n"));
+    await expect(loadContent(root)).rejects.toThrow(/allowed-tools/);
+
+    await put("commands/a.md", '---\ndescription: ""\n---\nx $ARGUMENTS\n');
+    await expect(loadContent(root)).rejects.toThrow(/description/);
+
+    await put("commands/a.md", commandMd("argument-hint: true\n"));
+    await expect(loadContent(root)).rejects.toThrow(/argument-hint/);
   });
 });

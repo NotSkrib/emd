@@ -15,6 +15,12 @@ const CONTENT: Content = {
     },
   ],
   agents: [{ name: "emd-agent", description: "An agent.", readonly: true, body: "Do it.\n" }],
+  commands: [],
+};
+
+const WITH_COMMANDS: Content = {
+  ...CONTENT,
+  commands: [{ name: "new", description: "Makes one.", argumentHint: "[what]", body: "Make it: $ARGUMENTS\nThen /emd:plan.\n" }],
 };
 
 const ROOT = path.resolve("/work/project");
@@ -78,6 +84,32 @@ describe("planInstall", () => {
 
     expect(plan.notes.join("\n")).toMatch(/OpenCode.*twice/s);
     expect(planInstall(CONTENT, { tools: ["claude", "codex"], scope: "project", root: ROOT, version: "1.0.0" }).notes).toEqual([]);
+  });
+
+  it("plans a command file for each tool that has command files, in that tool's format", () => {
+    const plan = planInstall(WITH_COMMANDS, { tools: ["gemini", "opencode"], scope: "project", root: ROOT, version: "1.0.0" });
+    const commands = plan.units.filter((unit) => unit.kind === "command");
+
+    expect(commands.map((unit) => [unit.name, unit.location])).toEqual([
+      ["new", at(".gemini", "commands", "emd", "new.toml")],
+      ["new", at(".opencode", "commands", "emd-new.md")],
+    ]);
+    expect(commands[0]?.files[0]?.content).toContain("Make it: {{args}}");
+    expect(commands[1]?.files[0]?.content).toContain("Then /emd-plan.");
+  });
+
+  it("plans no command for a tool that runs skills as commands, and says where to find them", () => {
+    const plan = planInstall(WITH_COMMANDS, { tools: ["claude", "cursor"], scope: "project", root: ROOT, version: "1.0.0" });
+
+    expect(plan.units.some((unit) => unit.kind === "command")).toBe(false);
+    expect(plan.notes.join("\n")).toMatch(/Claude Code.*plugin install emd@emd/s);
+    expect(plan.notes.join("\n")).toMatch(/Cursor.*skill/s);
+  });
+
+  it("stays quiet about commands when there are none to install", () => {
+    const plan = planInstall(CONTENT, { tools: ["claude", "cursor"], scope: "project", root: ROOT, version: "1.0.0" });
+
+    expect(plan.notes.join("\n")).not.toMatch(/plugin install/);
   });
 
   it("lists the tools each folder serves, for the summary", () => {

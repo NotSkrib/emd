@@ -51,8 +51,9 @@ const INSTALL_HELP = `Usage:
   emd uninstall [--tool <tools>] [--scope project|user] [--dry-run] [--json]
   emd status [--tool <tools>] [--scope project|user] [--json]
 
-Puts EMD's skills and subagents where your AI tools read them, so the tools know how to use emd
-and stop guessing Minecraft versions. Only files with EMD's marker are ever changed or removed.
+Puts EMD's skills, subagents and slash commands where your AI tools read them, so the tools know
+how to use emd and stop guessing Minecraft versions. Only files with EMD's marker are ever changed
+or removed.
 
   --tool <tools>   ${TOOL_IDS.join(", ")}, a comma-separated list of them, or all.
                    Required for install. uninstall and status default to all.

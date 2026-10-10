@@ -22,6 +22,7 @@ npm run prove         # after build: generate every preset and build it with Gra
 - `src/install/`: `emd install`. `tools.ts` is the table of AI tools and where they read skills and agents; `docs/AI-TOOLS.md` records where each row came from.
 - `skills/` and `agents/`: the content `emd install` ships. Skill and agent names start with `emd-`.
 - `.claude-plugin/` and `commands/`: the Claude Code plugin (`/emd:plan`, `/emd:new` and so on). The repository root is the plugin, so it reuses `skills/` and `agents/`. Run `claude plugin validate .` after changing either. The manifest sets no `version` on purpose, so every commit is an update.
+- `commands/*.md` is also what `emd install` converts into Gemini CLI TOML (`.gemini/commands/emd/<name>.toml`) and OpenCode Markdown (`.opencode/commands/emd-<name>.md`). A command must use `$ARGUMENTS`, must not contain `!{`, `@{`, `{{` or a backticked command after `!` (the emitters refuse it), and may name other commands as `/emd:<name>`, which are rewritten per tool.
 - `test/`: Vitest tests. `test/fixtures/` holds recorded API responses. `test/live/` hits the network and is excluded from `npm test`.
 - `scripts/`: maintenance scripts, such as the fixture recorder.
 

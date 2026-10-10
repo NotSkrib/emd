@@ -2,9 +2,9 @@ import { lstat, mkdir, readdir, rmdir, unlink, writeFile } from "node:fs/promise
 import path from "node:path";
 import { EmdError } from "../errors.js";
 import { readRegularText } from "../util/files.js";
-import { managedVersion } from "./emit.js";
+import { COMMAND_NAMESPACE, managedVersion } from "./emit.js";
 import type { InstallPlan, Unit } from "./plan.js";
-import { allAgentFolders, allSkillFolders, type Scope, type ToolId } from "./tools.js";
+import { allAgentFolders, allCommandFolders, allSkillFolders, type Scope, type ToolId } from "./tools.js";
 
 const MAX_READ_BYTES = 1024 * 1024;
 const NOT_OURS = "exists and was not installed by EMD";
@@ -23,9 +23,9 @@ export interface UnitOutcome {
 
 /** Something EMD installed earlier, found by its ownership marker. */
 export interface ManagedItem {
-  kind: "skill" | "agent";
+  kind: "skill" | "agent" | "command";
   name: string;
-  /** The skill's folder, or the agent's file. */
+  /** The skill's folder, or the agent's or command's file. */
   location: string;
   version: string;
 }
@@ -55,7 +55,8 @@ export async function findManaged(root: string, scope: Scope, tools: readonly To
   const absolute = (folder: string): string => path.join(root, ...folder.split("/"));
   const skills = await Promise.all(allSkillFolders(tools, scope).map((folder) => findSkills(absolute(folder))));
   const agents = await Promise.all(allAgentFolders(tools, scope).map((folder) => findAgents(absolute(folder))));
-  return [...skills.flat(), ...agents.flat()];
+  const commands = await Promise.all(allCommandFolders(tools, scope).map((folder) => findCommands(absolute(folder))));
+  return [...skills.flat(), ...agents.flat(), ...commands.flat()];
 }
 
 /** Deletes the given items. Each is checked for its marker again first, and links are never followed. */
@@ -64,18 +65,35 @@ export async function removeManaged(items: readonly ManagedItem[]): Promise<Mana
   for (const item of items) {
     const marked = item.kind === "skill" ? path.join(item.location, "SKILL.md") : item.location;
     if (managedVersion((await readIfFile(marked)) ?? "") === undefined) continue;
-    if (item.kind === "skill") await removeTree(item.location);
-    else await unlink(item.location);
+    if (item.kind === "skill") {
+      await removeTree(item.location);
+    } else {
+      await unlink(item.location);
+      if (item.kind === "command") await removeEmptyNamespace(path.dirname(item.location));
+    }
     removed.push(item);
   }
   return removed;
 }
 
 function inspectUnit(unit: Unit): Promise<UnitOutcome> {
-  return unit.kind === "skill" ? inspectSkill(unit) : inspectAgent(unit);
+  if (unit.kind === "skill") return inspectSkill(unit);
+  return unit.kind === "command" ? inspectCommand(unit) : inspectFile(unit);
 }
 
-async function inspectAgent(unit: Unit): Promise<UnitOutcome> {
+/** A command may sit in the `emd` namespace folder, which EMD creates. That folder must be a real folder. */
+async function inspectCommand(unit: Unit): Promise<UnitOutcome> {
+  const folder = path.dirname(unit.location);
+  if (path.basename(folder) === COMMAND_NAMESPACE) {
+    const kind = await entryKind(folder);
+    if (kind === "link") return conflict(unit, `${COMMAND_NAMESPACE}/ ${LINK}`);
+    if (kind === "file") return conflict(unit, `${COMMAND_NAMESPACE} ${NOT_OURS}`);
+  }
+  return inspectFile(unit);
+}
+
+/** An agent or command: one file that is either ours, or missing, or somebody else's. */
+async function inspectFile(unit: Unit): Promise<UnitOutcome> {
   const file = unit.files[0];
   const kind = await entryKind(unit.location);
   if (kind === "missing") return { unit, action: "create", stale: [] };
@@ -132,14 +150,34 @@ async function findSkills(folder: string): Promise<ManagedItem[]> {
 }
 
 async function findAgents(folder: string): Promise<ManagedItem[]> {
+  return findMarkedFiles(folder, "agent", (stem) => stem);
+}
+
+/** Commands sit beside the other files as `emd-<name>`, or inside the `emd` namespace folder as `<name>`. */
+async function findCommands(folder: string): Promise<ManagedItem[]> {
+  const flat = await findMarkedFiles(folder, "command", (stem) => stem);
+  const namespaced = (await listEntries(folder)).some((entry) => entry.isDirectory() && entry.name === COMMAND_NAMESPACE)
+    ? await findMarkedFiles(path.join(folder, COMMAND_NAMESPACE), "command", (stem) => `${COMMAND_NAMESPACE}:${stem}`, "")
+    : [];
+  return [...flat, ...namespaced];
+}
+
+/** Files that carry EMD's marker. Without a required prefix the folder itself must be EMD's. */
+async function findMarkedFiles(folder: string, kind: ManagedItem["kind"], nameOf: (stem: string) => string, prefix = "emd-"): Promise<ManagedItem[]> {
   const items: ManagedItem[] = [];
   for (const entry of await listEntries(folder)) {
-    if (!entry.isFile() || !entry.name.startsWith("emd-") || !/\.(md|toml)$/.test(entry.name)) continue;
+    if (!entry.isFile() || !entry.name.startsWith(prefix) || !/\.(md|toml)$/.test(entry.name)) continue;
     const location = path.join(folder, entry.name);
     const version = managedVersion((await readIfFile(location)) ?? "");
-    if (version !== undefined) items.push({ kind: "agent", name: entry.name.replace(/\.(md|toml)$/, ""), location, version });
+    if (version !== undefined) items.push({ kind, name: nameOf(entry.name.replace(/\.(md|toml)$/, "")), location, version });
   }
   return items;
+}
+
+/** Removes the `emd` namespace folder after its last command, and leaves it alone while anything else is in it. */
+async function removeEmptyNamespace(folder: string): Promise<void> {
+  if (path.basename(folder) !== COMMAND_NAMESPACE || (await entryKind(folder)) !== "directory") return;
+  if ((await listEntries(folder)).length === 0) await rmdir(folder);
 }
 
 type EntryKind = "missing" | "file" | "directory" | "link";

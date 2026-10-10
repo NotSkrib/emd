@@ -13,18 +13,31 @@ export interface AgentSink {
   folder: string;
 }
 
+/** How a tool wants a slash command written. */
+export type CommandFormat = "gemini-toml" | "opencode-md";
+
+export interface CommandSink {
+  format: CommandFormat;
+  /** Relative to the project root, or to the home folder in user scope. */
+  folder: string;
+}
+
 interface ToolSpec {
   label: string;
   /** Folders the tool reads skills from, most preferred first. Empty when the folder is unknown. */
   skills: Record<Scope, readonly string[]>;
   /** Where the tool reads subagent files, most preferred first. Empty when it has none. */
   agents: Record<Scope, readonly AgentSink[]>;
-  /** Why a scope or the agents are not supported, when the lists above are empty. */
+  /** Where the tool reads custom slash command files. Empty when it has none or runs skills as commands. */
+  commands: Record<Scope, readonly CommandSink[]>;
+  /** Why a scope or the agents or commands are not supported, when the lists above are empty. */
   skillsNote?: string;
   agentsNote?: string;
+  commandsNote?: string;
 }
 
 const AGENTS_SHARED: AgentSink = { format: "claude-md", folder: ".claude/agents" };
+const NO_COMMANDS: ToolSpec["commands"] = { project: [], user: [] };
 
 /**
  * Where each tool looks, taken from the tools' own documentation on 2026-10-10 (see docs/AI-TOOLS.md).
@@ -35,6 +48,8 @@ const TOOLS: Readonly<Record<ToolId, ToolSpec>> = {
     label: "Claude Code",
     skills: { project: [".claude/skills"], user: [".claude/skills"] },
     agents: { project: [AGENTS_SHARED], user: [AGENTS_SHARED] },
+    commands: NO_COMMANDS,
+    commandsNote: "the /emd: commands come from the EMD plugin: run /plugin marketplace add NotSkrib/emd, then /plugin install emd@emd.",
   },
   opencode: {
     label: "OpenCode",
@@ -46,6 +61,10 @@ const TOOLS: Readonly<Record<ToolId, ToolSpec>> = {
       project: [{ format: "opencode-md", folder: ".opencode/agents" }],
       user: [{ format: "opencode-md", folder: ".config/opencode/agents" }],
     },
+    commands: {
+      project: [{ format: "opencode-md", folder: ".opencode/commands" }],
+      user: [{ format: "opencode-md", folder: ".config/opencode/commands" }],
+    },
   },
   copilot: {
     label: "VS Code / GitHub Copilot",
@@ -54,6 +73,8 @@ const TOOLS: Readonly<Record<ToolId, ToolSpec>> = {
       user: [".agents/skills", ".claude/skills", ".copilot/skills"],
     },
     agents: { project: [AGENTS_SHARED], user: [AGENTS_SHARED] },
+    commands: NO_COMMANDS,
+    commandsNote: "skills appear as slash commands in chat (type / and pick an EMD skill), so EMD installs no command files.",
   },
   codex: {
     label: "Codex",
@@ -62,6 +83,8 @@ const TOOLS: Readonly<Record<ToolId, ToolSpec>> = {
       project: [{ format: "codex-toml", folder: ".codex/agents" }],
       user: [{ format: "codex-toml", folder: ".codex/agents" }],
     },
+    commands: NO_COMMANDS,
+    commandsNote: "mention an EMD skill with $ or open /skills, so EMD installs no command files.",
   },
   cursor: {
     label: "Cursor",
@@ -73,6 +96,8 @@ const TOOLS: Readonly<Record<ToolId, ToolSpec>> = {
       project: [AGENTS_SHARED, { format: "claude-md", folder: ".cursor/agents" }],
       user: [AGENTS_SHARED, { format: "claude-md", folder: ".cursor/agents" }],
     },
+    commands: NO_COMMANDS,
+    commandsNote: "skills appear as slash commands in Agent chat (type / and pick an EMD skill), so EMD installs no command files.",
   },
   gemini: {
     label: "Gemini CLI",
@@ -81,11 +106,16 @@ const TOOLS: Readonly<Record<ToolId, ToolSpec>> = {
       project: [{ format: "gemini-md", folder: ".gemini/agents" }],
       user: [{ format: "gemini-md", folder: ".gemini/agents" }],
     },
+    commands: {
+      project: [{ format: "gemini-toml", folder: ".gemini/commands" }],
+      user: [{ format: "gemini-toml", folder: ".gemini/commands" }],
+    },
   },
   antigravity: {
     label: "Google Antigravity",
     skills: { project: [".agents/skills"], user: [] },
     agents: { project: [], user: [] },
+    commands: NO_COMMANDS,
     skillsNote: "Antigravity's global skills folder differs by product (IDE, CLI, 2.0), so install it per project.",
     agentsNote: "Antigravity has no subagent files; it gets the skills only.",
   },
@@ -109,6 +139,16 @@ export interface SkillFolders {
 export interface AgentSinks {
   sinks: AgentSink[];
   unsupported: Unsupported[];
+}
+
+export interface CommandSinks {
+  sinks: CommandSink[];
+  unsupported: Unsupported[];
+}
+
+interface Sink {
+  format: string;
+  folder: string;
 }
 
 export function toolLabel(tool: ToolId): string {
@@ -158,20 +198,12 @@ export function chooseSkillFolders(tools: readonly ToolId[], scope: Scope): Skil
 
 /** Like the skill folders, but a folder is shared only when the agent file format is the same too. */
 export function chooseAgentSinks(tools: readonly ToolId[], scope: Scope): AgentSinks {
-  const unsupported: Unsupported[] = [];
-  const candidates: Array<{ options: readonly AgentSink[] }> = [];
-  for (const tool of tools) {
-    const options = TOOLS[tool].agents[scope];
-    if (options.length === 0) unsupported.push({ tool, reason: TOOLS[tool].agentsNote ?? "This tool has no subagent files." });
-    else candidates.push({ options });
-  }
+  return pickSinks(tools, (tool) => TOOLS[tool].agents[scope], (tool) => TOOLS[tool].agentsNote ?? "This tool has no subagent files.");
+}
 
-  const sinks: AgentSink[] = [];
-  for (const { options } of [...candidates].sort((a, b) => a.options.length - b.options.length)) {
-    const covered = options.some((option) => sinks.some((sink) => sameSink(sink, option)));
-    if (!covered) sinks.push(options[0] as AgentSink);
-  }
-  return { sinks, unsupported };
+/** The same for slash commands. A tool that runs skills as commands, or has no command files, gets a note instead. */
+export function chooseCommandSinks(tools: readonly ToolId[], scope: Scope): CommandSinks {
+  return pickSinks(tools, (tool) => TOOLS[tool].commands[scope], (tool) => TOOLS[tool].commandsNote ?? "This tool has no custom command files.");
 }
 
 /** Every skill folder any of the tools reads, for finding what EMD installed earlier. */
@@ -184,7 +216,33 @@ export function allAgentFolders(tools: readonly ToolId[], scope: Scope): string[
   return [...new Set(tools.flatMap((tool) => TOOLS[tool].agents[scope].map((sink) => sink.folder)))];
 }
 
-function sameSink(a: AgentSink, b: AgentSink): boolean {
+/** Every command folder any of the tools reads, for finding what EMD installed earlier. */
+export function allCommandFolders(tools: readonly ToolId[], scope: Scope): string[] {
+  return [...new Set(tools.flatMap((tool) => TOOLS[tool].commands[scope].map((sink) => sink.folder)))];
+}
+
+function pickSinks<T extends Sink>(
+  tools: readonly ToolId[],
+  optionsFor: (tool: ToolId) => readonly T[],
+  noteFor: (tool: ToolId) => string,
+): { sinks: T[]; unsupported: Unsupported[] } {
+  const unsupported: Unsupported[] = [];
+  const candidates: Array<{ options: readonly T[] }> = [];
+  for (const tool of tools) {
+    const options = optionsFor(tool);
+    if (options.length === 0) unsupported.push({ tool, reason: noteFor(tool) });
+    else candidates.push({ options });
+  }
+
+  const sinks: T[] = [];
+  for (const { options } of [...candidates].sort((a, b) => a.options.length - b.options.length)) {
+    const covered = options.some((option) => sinks.some((sink) => sameSink(sink, option)));
+    if (!covered) sinks.push(options[0] as T);
+  }
+  return { sinks, unsupported };
+}
+
+function sameSink(a: Sink, b: Sink): boolean {
   return a.format === b.format && a.folder === b.folder;
 }
 

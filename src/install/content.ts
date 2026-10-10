@@ -14,6 +14,11 @@ const MAX_FILES_PER_SKILL = 50;
 const MAX_DEPTH = 3;
 const SKILL_FIELDS: ReadonlySet<string> = new Set(["name", "description", "license"]);
 const AGENT_FIELDS: ReadonlySet<string> = new Set(["name", "description", "readonly"]);
+const COMMAND_FIELDS: ReadonlySet<string> = new Set(["description", "argument-hint"]);
+/** A command is named by its file, such as `fix-build`. The tool-specific prefix is added when it is installed. */
+const COMMAND_NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+const MAX_COMMAND_NAME_LENGTH = 32;
+const ARGUMENTS_PLACEHOLDER = "$ARGUMENTS";
 
 export interface SkillFile {
   /** Path inside the skill folder, with forward slashes. */
@@ -37,19 +42,34 @@ export interface Agent {
   body: string;
 }
 
+/** A slash command. The Claude Code plugin reads the same file, so `$ARGUMENTS` is where the user's text goes. */
+export interface Command {
+  /** The file name without `.md`, such as `fix-build`. */
+  name: string;
+  description: string;
+  argumentHint?: string;
+  /** The prompt, without the header. */
+  body: string;
+}
+
 export interface Content {
   skills: Skill[];
   agents: Agent[];
+  commands: Command[];
 }
 
 /**
- * Loads EMD's own skills (`skills/<name>/SKILL.md` and its files) and agents (`agents/<name>.md`)
- * and checks them against the Agent Skills format before anything is installed, so a mistake in
- * a shipped file fails the tests instead of a user's tool.
+ * Loads EMD's own skills (`skills/<name>/SKILL.md` and its files), agents (`agents/<name>.md`)
+ * and slash commands (`commands/<name>.md`) and checks them before anything is installed, so a
+ * mistake in a shipped file fails the tests instead of a user's tool.
  */
 export async function loadContent(root: string): Promise<Content> {
-  const [skills, agents] = await Promise.all([loadSkills(path.join(root, "skills")), loadAgents(path.join(root, "agents"))]);
-  return { skills, agents };
+  const [skills, agents, commands] = await Promise.all([
+    loadSkills(path.join(root, "skills")),
+    loadAgents(path.join(root, "agents")),
+    loadCommands(path.join(root, "commands")),
+  ]);
+  return { skills, agents, commands };
 }
 
 async function loadSkills(directory: string): Promise<Skill[]> {
@@ -120,6 +140,30 @@ async function loadAgent(directory: string, file: string): Promise<Agent> {
   if (fields.readonly !== undefined && typeof fields.readonly !== "boolean") throw bad(`${label}: readonly must be true or false.`);
   if (body.trim() === "") throw bad(`${label} has no instructions after the header.`);
   return { name: stem, description, readonly: fields.readonly === true, body };
+}
+
+async function loadCommands(directory: string): Promise<Command[]> {
+  const files = (await listEntries(directory)).filter((entry) => entry.isFile() && entry.name.endsWith(".md")).map((entry) => entry.name);
+  const commands = await Promise.all(files.map((file) => loadCommand(directory, file)));
+  return commands.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+async function loadCommand(directory: string, file: string): Promise<Command> {
+  const stem = file.slice(0, -".md".length);
+  const label = `commands/${file}`;
+  if (stem.length > MAX_COMMAND_NAME_LENGTH || !COMMAND_NAME.test(stem)) {
+    throw bad(`${label}: a command name must be lowercase words joined by single hyphens and at most ${MAX_COMMAND_NAME_LENGTH} characters.`);
+  }
+  const { fields, body } = parseFrontmatter(await readRegularText(path.join(directory, file), MAX_FILE_BYTES, label, "BAD_CONTENT"));
+  assertOnlyFields(fields, COMMAND_FIELDS, label);
+  const description = fields.description;
+  if (typeof description !== "string" || description.length === 0 || description.length > MAX_DESCRIPTION_LENGTH || /[\r\n]/.test(description)) {
+    throw bad(`${label}: the description must be 1 to ${MAX_DESCRIPTION_LENGTH} characters on one line.`);
+  }
+  const hint = fields["argument-hint"];
+  if (hint !== undefined && (typeof hint !== "string" || /[\r\n]/.test(hint))) throw bad(`${label}: argument-hint must be one line of text.`);
+  if (!body.includes(ARGUMENTS_PLACEHOLDER)) throw bad(`${label} never uses ${ARGUMENTS_PLACEHOLDER}, so it would ignore what the user typed.`);
+  return { name: stem, description, ...(hint === undefined ? {} : { argumentHint: hint }), body };
 }
 
 function assertName(name: string, what: string): void {

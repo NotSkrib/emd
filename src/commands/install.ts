@@ -20,7 +20,7 @@ export interface StatusArgs {
 }
 
 export interface InstallDeps {
-  /** The folder that holds `skills/` and `agents/`: the root of the emd package. */
+  /** The folder that holds `skills/`, `agents/` and `commands/`: the root of the emd package. */
   contentDir: string;
   /** The project folder, used in project scope. */
   cwd: string;
@@ -30,11 +30,11 @@ export interface InstallDeps {
   version: string;
 }
 
-/** Puts emd's skills and subagents where the chosen AI tools read them. */
+/** Puts emd's skills, subagents and slash commands where the chosen AI tools read them. */
 export async function runInstall(args: InstallArgs, deps: InstallDeps): Promise<string> {
   const content = await loadContent(deps.contentDir);
-  if (content.skills.length === 0 && content.agents.length === 0) {
-    throw new EmdError("NOT_FOUND", `This copy of emd ships no skills or agents (looked in ${deps.contentDir}). Reinstall emd.`);
+  if (content.skills.length === 0 && content.agents.length === 0 && content.commands.length === 0) {
+    throw new EmdError("NOT_FOUND", `This copy of emd ships no skills, agents or commands (looked in ${deps.contentDir}). Reinstall emd.`);
   }
   const root = rootFor(args.scope, deps);
   const plan = planInstall(content, { tools: args.tools, scope: args.scope, root, version: deps.version });
@@ -76,7 +76,7 @@ export async function runStatus(args: StatusArgs, deps: InstallDeps): Promise<st
   const outdated = items.some((item) => !item.current);
   return [
     `EMD ${deps.version}. Installed in ${root} (${args.scope}):`,
-    ...items.map((item) => `  ${item.kind.padEnd(5)}  ${item.location}  ${item.version} (${versionNote(item.version, deps.version)})`),
+    ...items.map((item) => `  ${item.kind.padEnd(7)}  ${item.location}  ${item.version} (${versionNote(item.version, deps.version)})`),
     ...(outdated ? ["", `Run \`emd install --tool <tools> --scope ${args.scope}\` to bring the older files up to date.`] : []),
   ].join("\n");
 }
