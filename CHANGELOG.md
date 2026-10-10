@@ -4,7 +4,7 @@
 
 Added
 
-- Five skills: `emd-preset-guide`, `emd-upgrade-minecraft`, `emd-folia-threading`, `emd-local-testing` and `emd-release-checklist`. The Folia skill was checked against the Paper documentation.
+- Six skills: `emd-preset-guide`, `emd-upgrade-minecraft`, `emd-folia-threading`, `emd-local-testing`, `emd-release-checklist` and `emd-forge-basics`. The Folia skill was checked against the Paper documentation. The Forge skill was checked by building a mod from scratch with ForgeGradle 7 on Gradle 9.8.1. There is no Forge preset, because Forge's MDK is LGPL licensed.
 - Three subagents: `emd-planner` and `emd-doctor` (both read-only) and `emd-upgrader`.
 - Five slash commands for the Claude Code plugin: `/emd:upgrade`, `/emd:doctor`, `/emd:release`, `/emd:presets` and `/emd:test`.
 - `emd install` now writes slash commands for Gemini CLI (`.gemini/commands/emd/<name>.toml`, run as `/emd:<name>`) and OpenCode (`.opencode/commands/emd-<name>.md`, run as `/emd-<name>`). For Copilot, Cursor and Codex it says to use the skills as commands, because those tools do not need command files. EMD refuses a command whose text contains syntax Gemini CLI or OpenCode would execute.

@@ -38,6 +38,7 @@ describe("shipped skills and agents", () => {
     expect(content.skills.map((skill) => skill.name)).toEqual([
       "emd-build-troubleshooting",
       "emd-folia-threading",
+      "emd-forge-basics",
       "emd-local-testing",
       "emd-minecraft-dev",
       "emd-packs",

@@ -35,7 +35,7 @@ Minecraft tooling changes faster than a model's training data. Version numbers, 
 
 `emd` refuses a Minecraft version outside a preset's range. When that happens, say there is no preset for that version yet. Do not rebuild an older layout from memory; read the `emd-version-facts` skill first.
 
-Not covered yet: Forge, Quilt, plain Spigot or Bukkit, BungeeCord, Sponge, Bedrock add-ons, and Minecraft versions older than the ranges above.
+Not covered by a preset yet: Forge, Quilt, plain Spigot or Bukkit, BungeeCord, Sponge, Bedrock add-ons, and Minecraft versions older than the ranges above. For Forge, read the `emd-forge-basics` skill: Forge's MDK is LGPL licensed, so `emd` cannot generate it, but the skill gives the build facts.
 
 ## Check versions in an existing project
 
@@ -49,6 +49,7 @@ Run `emd versions --mc <version>` (add `--json` for scripts). It prints the Java
 - `emd-preset-guide`: what each preset makes, where its descriptor and run tasks are, and its rules.
 - `emd-upgrade-minecraft`: moving an existing project to a newer Minecraft version.
 - `emd-folia-threading`: the four Folia schedulers and what `folia-supported` really promises.
+- `emd-forge-basics`: how a Forge 26.x mod is built, since there is no Forge preset.
 - `emd-local-testing`: starting the test server, proxy or client, and reporting the run honestly.
 - `emd-release-checklist`: what to check in the jar or pack before it is shared.
 - If the antislop skills are installed, follow them for README text and other prose you write.

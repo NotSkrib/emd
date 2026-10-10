@@ -89,6 +89,7 @@ The tools are `claude`, `opencode`, `copilot` (VS Code), `codex`, `cursor`, `gem
 | `emd-preset-guide` | What each preset makes, where its descriptor and run tasks are, and its rules. |
 | `emd-upgrade-minecraft` | Moving a project to a newer Minecraft version, and where the formats changed. |
 | `emd-folia-threading` | The four Folia schedulers and what `folia-supported` promises. |
+| `emd-forge-basics` | How a Forge 26.x mod is built (ForgeGradle 7, the dependency form, the mod class, `mods.toml`), checked with a real build. |
 | `emd-local-testing` | Starting the test server, proxy or client, and reporting the run honestly. |
 | `emd-release-checklist` | What to check in the jar or pack before it is shared. |
 | `emd-builder` (agent) | Creates a project end to end and builds it. |
@@ -144,10 +145,12 @@ EMD refuses to install a command whose text contains syntax that Gemini CLI or O
 |---|---|---|
 | Plugins | Paper, Folia (a flag in the Paper preset) | Spigot/Bukkit, Purpur |
 | Proxies | Velocity | BungeeCord |
-| Mods | Fabric, NeoForge | Forge, Quilt |
+| Mods | Fabric, NeoForge | Quilt. Forge has a skill but no preset, see below. |
 | Packs | Data packs, resource packs (1.21.9 and newer) | older versions, Bedrock add-ons |
 
 `emd versions` already reports Forge and Velocity data. Only the platforms in the middle column have presets.
+
+**Why there is no Forge preset.** Presets may copy only from MIT, Apache-2.0, CC0, BSD, ISC, 0BSD and Unlicense projects. Forge's MDK is under the LGPL 2.1, and its examples repository has no license, so neither can be copied. The `emd-forge-basics` skill gives AI tools the build facts instead, taken from a mod written from scratch and built with Gradle. A Forge preset would need either a permissively licensed template or a decision to relax that rule.
 
 ## Develop
 
