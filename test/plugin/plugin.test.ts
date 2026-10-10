@@ -56,6 +56,23 @@ describe("the Claude Code plugin", () => {
     expect(command.body).toContain("$ARGUMENTS");
   });
 
+  it("makes /emd:plan ask for the required inputs, and never fill them in itself", () => {
+    const plan = commands.find((command) => command.name === "plan");
+
+    expect(plan?.body).toMatch(/Ask for the inputs now/);
+    expect(plan?.body).toMatch(/emd preset show <id>/);
+    expect(plan?.body).toMatch(/Never fill in a name, author or package yourself/);
+    expect(plan?.body).toMatch(/Use any answer the user already put in their request/);
+  });
+
+  it("makes /emd:new reuse the answers from the plan instead of asking again", () => {
+    const create = commands.find((command) => command.name === "new");
+
+    expect(create?.body).toMatch(/every answer already given in this conversation/);
+    expect(create?.body).toMatch(/ask only for what is still missing/);
+    expect(create?.body).toMatch(/Do not invent a name, author or package/);
+  });
+
   it("keeps /emd:plan read-only until the user confirms", () => {
     const plan = commands.find((command) => command.name === "plan");
 

@@ -55,13 +55,13 @@ Lists the project layouts EMD has and recommends one. It creates nothing.
 /emd:plan a Paper plugin called HelloJoin that greets players when they join
 ```
 
-Reports the preset, the live versions (Java, Paper build, any warnings), the inputs it still needs from you, and the risks. It creates nothing and waits for your answer. Say yes, or change something.
+Reports the preset and the live versions (Java, Paper build, any warnings), then asks you for the project name, the Java package and the author, with an example beside each. It also offers the optional settings that have a default, such as the version and the description. Anything you already said in your request, like the name, it does not ask again. It never fills these in for you. Once you answer, it shows the plan, the risks and the exact command it will run. It creates nothing until you say yes, or change something.
 
 ```text
 /emd:new a Paper plugin called HelloJoin that greets players when they join
 ```
 
-Asks for anything it needs, such as the Java package and your author name. It does not make those up. Then it creates the folder, runs the build, and reports the versions it used, the commands it ran, and what it did not prove. A Gradle build proves the project compiles. It does not prove the plugin works in the game, and the report says "built, not run" unless the game or a server was started.
+Uses the answers you gave in the plan and asks only for what is still missing. It does not make anything up. Then it creates the folder, runs the build, and reports the versions it used, the commands it ran, and what it did not prove. A Gradle build proves the project compiles. It does not prove the plugin works in the game, and the report says "built, not run" unless the game or a server was started.
 
 Open the new folder. Its `README.md` and `AGENTS.md` list the exact build and run commands for that project.
 
@@ -201,7 +201,7 @@ EMD is also a Claude Code plugin, which gives you `/emd:` commands. Install it w
 
 | Command | What it does |
 |---|---|
-| `/emd:plan <what you want to build>` | Plans the project (platform, preset, live versions, inputs, risks) and waits for your OK before creating anything. |
+| `/emd:plan <what you want to build>` | Asks for the project name, package and author, then plans the project (platform, preset, live versions, risks) and waits for your OK before creating anything. |
 | `/emd:new <what you want to build>` | Creates the project from a preset and builds it, through the `emd-builder` agent. |
 | `/emd:versions [version]` | Shows live Minecraft, Java and platform versions. |
 | `/emd:review` | Reviews your changes for stale versions and bad pack metadata. Read-only. |

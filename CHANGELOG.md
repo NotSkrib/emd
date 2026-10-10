@@ -9,6 +9,7 @@ Added
 - Five slash commands for the Claude Code plugin: `/emd:upgrade`, `/emd:doctor`, `/emd:release`, `/emd:presets` and `/emd:test`.
 - `emd install` now writes slash commands for Gemini CLI (`.gemini/commands/emd/<name>.toml`, run as `/emd:<name>`) and OpenCode (`.opencode/commands/emd-<name>.md`, run as `/emd-<name>`). For Copilot, Cursor and Codex it says to use the skills as commands, because those tools do not need command files. EMD refuses a command whose text contains syntax Gemini CLI or OpenCode would execute.
 - `emd status` lists installed commands.
+- `/emd:plan` now asks for the project name, package and author (and offers the optional settings) before it shows the plan, and `/emd:new` reuses those answers instead of asking again.
 
 Fixed
 
