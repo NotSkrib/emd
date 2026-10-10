@@ -21,6 +21,7 @@ npm run prove         # after build: generate every preset and build it with Gra
 - `src/presets/`: the preset engine. `presets/` holds the presets themselves.
 - `src/install/`: `emd install`. `tools.ts` is the table of AI tools and where they read skills and agents; `docs/AI-TOOLS.md` records where each row came from.
 - `skills/` and `agents/`: the content `emd install` ships. Skill and agent names start with `emd-`.
+- `.claude-plugin/` and `commands/`: the Claude Code plugin (`/emd:plan`, `/emd:new` and so on). The repository root is the plugin, so it reuses `skills/` and `agents/`. Run `claude plugin validate .` after changing either. The manifest sets no `version` on purpose, so every commit is an update.
 - `test/`: Vitest tests. `test/fixtures/` holds recorded API responses. `test/live/` hits the network and is excluded from `npm test`.
 - `scripts/`: maintenance scripts, such as the fixture recorder.
 

@@ -91,6 +91,25 @@ The tools are `claude`, `opencode`, `copilot` (VS Code), `codex`, `cursor`, `gem
 
 EMD only changes files that carry its marker and names that start with `emd-`. It stops without writing anything if it would overwrite something else. How each tool's folders were found is in [docs/AI-TOOLS.md](docs/AI-TOOLS.md).
 
+## Slash commands in Claude Code
+
+EMD is also a Claude Code plugin, which gives you `/emd:` commands. Inside Claude Code:
+
+```text
+/plugin marketplace add NotSkrib/emd
+/plugin install emd@emd
+```
+
+| Command | What it does |
+|---|---|
+| `/emd:plan <what you want to build>` | Plans the project (platform, preset, live versions, inputs, risks) and waits for your OK before creating anything. |
+| `/emd:new <what you want to build>` | Creates the project from a preset and builds it, through the `emd-builder` agent. |
+| `/emd:versions [version]` | Shows live Minecraft, Java and platform versions. |
+| `/emd:review` | Reviews your changes for stale versions and bad pack metadata. Read-only. |
+| `/emd:fix-build` | Diagnoses a failing Gradle build, one change at a time. |
+
+The plugin also loads the skills and agents, so you do not need `emd install` for Claude Code. The commands run `emd` (as `npx emd-minecraft` when it is not installed), so Node 22 or newer is required. The plugin passes Claude Code's own `claude plugin validate`, but has not been run in a real session yet. Slash commands for the other tools are not built yet. They get the skills and agents through `emd install`.
+
 ## Platforms
 
 | Family | Supported today (a preset exists) | Planned |

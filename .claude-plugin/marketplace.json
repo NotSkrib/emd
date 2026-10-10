@@ -1,0 +1,14 @@
+{
+  "name": "emd",
+  "description": "Everything Minecraft Development",
+  "owner": {
+    "name": "NotSkrib"
+  },
+  "plugins": [
+    {
+      "name": "emd",
+      "source": "./",
+      "description": "Slash commands, skills and subagents for building Minecraft plugins, mods, data packs and resource packs from proven presets with live versions."
+    }
+  ]
+}

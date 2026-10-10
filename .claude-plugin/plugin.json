@@ -1,0 +1,13 @@
+{
+  "name": "emd",
+  "displayName": "EMD: Everything Minecraft Development",
+  "description": "Slash commands, skills and subagents for building Minecraft plugins, mods, data packs and resource packs from proven presets with live versions.",
+  "author": {
+    "name": "NotSkrib",
+    "url": "https://github.com/NotSkrib"
+  },
+  "homepage": "https://github.com/NotSkrib/emd#readme",
+  "repository": "https://github.com/NotSkrib/emd",
+  "license": "MIT",
+  "keywords": ["minecraft", "paper", "fabric", "neoforge", "velocity", "datapack", "resourcepack"]
+}

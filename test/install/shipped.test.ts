@@ -1,3 +1,4 @@
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -13,10 +14,16 @@ const presets = await loadPresets(path.join(ROOT, "presets"));
 const COMMANDS: ReadonlySet<string> = new Set(["versions", "preset", "new", "install", "uninstall", "status"]);
 const FLAGS: ReadonlySet<string> = new Set(["--mc", "--set", "--dry-run", "--preset", "--tool", "--scope", "--json", "--dir", "--force", "--refresh", "--help"]);
 
-/** Every file's text: skill files and the agents' own bodies. */
+const commandFiles = (await readdir(path.join(ROOT, "commands"))).filter((name) => name.endsWith(".md")).sort();
+const commandDocuments = await Promise.all(
+  commandFiles.map(async (name) => ({ label: `commands/${name}`, text: await readFile(path.join(ROOT, "commands", name), "utf8") })),
+);
+
+/** Every file's text: skill files, the agents' own bodies and the Claude Code slash commands. */
 const documents: Array<{ label: string; text: string }> = [
   ...content.skills.flatMap((skill) => skill.files.map((file) => ({ label: `skills/${skill.name}/${file.path}`, text: file.content }))),
   ...content.agents.map((agent) => ({ label: `agents/${agent.name}.md`, text: agent.body })),
+  ...commandDocuments,
 ];
 
 /** The code in a document: inline `spans` and the lines of fenced blocks. */
