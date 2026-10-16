@@ -40,7 +40,7 @@ jobs:
           cache: npm
       # Current Minecraft releases need Java 25. When Mojang moves to a newer Java this job fails on
       # the compile step, which is the signal to raise this number.
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 25
